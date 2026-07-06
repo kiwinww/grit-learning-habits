@@ -25,6 +25,7 @@ try {
   if ($KeyPath) {
     $sshOptions += @("-i", $KeyPath)
   }
+  $sshOptions += @("-o", "StrictHostKeyChecking=accept-new")
 
   scp @sshOptions $archive "${target}:${remoteArchive}"
 
@@ -43,7 +44,7 @@ pm2 startOrRestart ecosystem.config.cjs --update-env
 pm2 save
 "@
 
-  ssh @sshOptions $target $remoteScript
+  $remoteScript | ssh @sshOptions $target "bash -s"
   Write-Host "Deployed: http://${HostName}:3000/"
   Write-Host "Admin:    http://${HostName}:3000/admin"
 }

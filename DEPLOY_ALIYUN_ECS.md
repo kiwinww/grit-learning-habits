@@ -15,7 +15,7 @@
 sudo mkdir -p /www
 sudo chown -R $USER:$USER /www
 cd /www
-git clone https://github.com/kiwi0127/grit-learning-habits.git
+git clone https://github.com/kiwinww/grit-learning-habits.git
 cd grit-learning-habits
 
 cp .env.example .env
