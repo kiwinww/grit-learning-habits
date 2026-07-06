@@ -29,6 +29,12 @@ pm2 save
 pm2 startup
 ```
 
+也可以在本机 Windows PowerShell 里直接发布当前 Git 提交：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/deploy-aliyun-ecs.ps1 -HostName 服务器公网IP -User root -KeyPath C:\path\to\key.pem
+```
+
 访问：
 
 ```text
