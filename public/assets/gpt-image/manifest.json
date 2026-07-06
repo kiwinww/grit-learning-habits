@@ -1,0 +1,234 @@
+{
+  "generatedAt": "2026-07-06",
+  "sources": {
+    "background-sheet.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_053a2207225fb428016a4b9ad22dfc8199a806a8574f37c279.png",
+    "icon-sheet.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_00a47447c6abb2cd016a4b9b873394819399977c09656bc0bd.png",
+    "badge-sheet.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_00a47447c6abb2cd016a4b9bd863988193b8ffd011d305b27f.png",
+    "reward-sheet.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_00a47447c6abb2cd016a4b9c19e8588193b072c3fbb11496fe.png",
+    "empty-state-sheet.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_00a47447c6abb2cd016a4b9c696a788193a8ac04e3a28ca34c.png",
+    "ui-style-mockup.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_00a47447c6abb2cd016a4b9cacbd4c8193918e64a84b540eb1.png",
+    "hero-forest-desktop.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_0be929fbf44e9631016a4b9d2461e881919bbc4a1f07eb5e17.png",
+    "admin-forest-dashboard.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_0be929fbf44e9631016a4b9d8ece888191a0e90bc64c16ab6c.png",
+    "hero-forest-mobile.png": "C:\\Users\\admin\\.codex\\generated_images\\019f284e-87d7-7682-a9ae-1e8aaacbd940\\ig_0be929fbf44e9631016a4b9df0a73481918a5941c611ead360.png"
+  },
+  "backgrounds": [
+    {
+      "name": "hero-forest-desktop",
+      "path": "/assets/gpt-image/backgrounds/hero-forest-desktop.png"
+    },
+    {
+      "name": "admin-forest-dashboard",
+      "path": "/assets/gpt-image/backgrounds/admin-forest-dashboard.png"
+    },
+    {
+      "name": "hero-forest-mobile",
+      "path": "/assets/gpt-image/backgrounds/hero-forest-mobile.png"
+    },
+    {
+      "name": "background-hero-cell",
+      "path": "/assets/gpt-image/backgrounds/background-hero-cell.png"
+    },
+    {
+      "name": "background-admin-cell",
+      "path": "/assets/gpt-image/backgrounds/background-admin-cell.png"
+    },
+    {
+      "name": "background-mobile-cell",
+      "path": "/assets/gpt-image/backgrounds/background-mobile-cell.png"
+    },
+    {
+      "name": "background-weekly-cell",
+      "path": "/assets/gpt-image/backgrounds/background-weekly-cell.png"
+    },
+    {
+      "name": "background-reward-shop-cell",
+      "path": "/assets/gpt-image/backgrounds/background-reward-shop-cell.png"
+    },
+    {
+      "name": "background-empty-cell",
+      "path": "/assets/gpt-image/backgrounds/background-empty-cell.png"
+    }
+  ],
+  "icons": [
+    {
+      "name": "icon-brand-leaf-coin",
+      "path": "/assets/gpt-image/icons/icon-brand-leaf-coin.png"
+    },
+    {
+      "name": "icon-star-coin",
+      "path": "/assets/gpt-image/icons/icon-star-coin.png"
+    },
+    {
+      "name": "icon-nav-schedule",
+      "path": "/assets/gpt-image/icons/icon-nav-schedule.png"
+    },
+    {
+      "name": "icon-nav-reward",
+      "path": "/assets/gpt-image/icons/icon-nav-reward.png"
+    },
+    {
+      "name": "icon-nav-records",
+      "path": "/assets/gpt-image/icons/icon-nav-records.png"
+    },
+    {
+      "name": "icon-nav-weekly",
+      "path": "/assets/gpt-image/icons/icon-nav-weekly.png"
+    },
+    {
+      "name": "icon-nav-parent",
+      "path": "/assets/gpt-image/icons/icon-nav-parent.png"
+    },
+    {
+      "name": "icon-task-learning",
+      "path": "/assets/gpt-image/icons/icon-task-learning.png"
+    },
+    {
+      "name": "icon-type-routine",
+      "path": "/assets/gpt-image/icons/icon-type-routine.png"
+    },
+    {
+      "name": "icon-type-free",
+      "path": "/assets/gpt-image/icons/icon-type-free.png"
+    },
+    {
+      "name": "icon-type-bedtime",
+      "path": "/assets/gpt-image/icons/icon-type-bedtime.png"
+    },
+    {
+      "name": "icon-review-observation",
+      "path": "/assets/gpt-image/icons/icon-review-observation.png"
+    },
+    {
+      "name": "icon-calendar",
+      "path": "/assets/gpt-image/icons/icon-calendar.png"
+    },
+    {
+      "name": "icon-redemption-gift",
+      "path": "/assets/gpt-image/icons/icon-redemption-gift.png"
+    },
+    {
+      "name": "icon-coin-ledger",
+      "path": "/assets/gpt-image/icons/icon-coin-ledger.png"
+    },
+    {
+      "name": "icon-settings",
+      "path": "/assets/gpt-image/icons/icon-settings.png"
+    }
+  ],
+  "badges": [
+    {
+      "name": "badge-streak",
+      "path": "/assets/gpt-image/badges/badge-streak.png"
+    },
+    {
+      "name": "badge-task-champion",
+      "path": "/assets/gpt-image/badges/badge-task-champion.png"
+    },
+    {
+      "name": "badge-coin-saver",
+      "path": "/assets/gpt-image/badges/badge-coin-saver.png"
+    },
+    {
+      "name": "badge-reward-delivered",
+      "path": "/assets/gpt-image/badges/badge-reward-delivered.png"
+    },
+    {
+      "name": "badge-tidy",
+      "path": "/assets/gpt-image/badges/badge-tidy.png"
+    },
+    {
+      "name": "badge-thinking",
+      "path": "/assets/gpt-image/badges/badge-thinking.png"
+    },
+    {
+      "name": "badge-focus",
+      "path": "/assets/gpt-image/badges/badge-focus.png"
+    },
+    {
+      "name": "badge-correction",
+      "path": "/assets/gpt-image/badges/badge-correction.png"
+    },
+    {
+      "name": "badge-praise",
+      "path": "/assets/gpt-image/badges/badge-praise.png"
+    },
+    {
+      "name": "badge-weekly-review",
+      "path": "/assets/gpt-image/badges/badge-weekly-review.png"
+    },
+    {
+      "name": "badge-early-starter",
+      "path": "/assets/gpt-image/badges/badge-early-starter.png"
+    },
+    {
+      "name": "badge-balanced-rest",
+      "path": "/assets/gpt-image/badges/badge-balanced-rest.png"
+    }
+  ],
+  "rewards": [
+    {
+      "name": "reward-screen",
+      "path": "/assets/gpt-image/rewards/reward-screen.png"
+    },
+    {
+      "name": "reward-food",
+      "path": "/assets/gpt-image/rewards/reward-food.png"
+    },
+    {
+      "name": "reward-book",
+      "path": "/assets/gpt-image/rewards/reward-book.png"
+    },
+    {
+      "name": "reward-outing",
+      "path": "/assets/gpt-image/rewards/reward-outing.png"
+    },
+    {
+      "name": "reward-choice",
+      "path": "/assets/gpt-image/rewards/reward-choice.png"
+    },
+    {
+      "name": "reward-delayed",
+      "path": "/assets/gpt-image/rewards/reward-delayed.png"
+    },
+    {
+      "name": "reward-game",
+      "path": "/assets/gpt-image/rewards/reward-game.png"
+    },
+    {
+      "name": "reward-craft",
+      "path": "/assets/gpt-image/rewards/reward-craft.png"
+    }
+  ],
+  "emptyStates": [
+    {
+      "name": "empty-records",
+      "path": "/assets/gpt-image/empty-states/empty-records.png"
+    },
+    {
+      "name": "empty-redemptions",
+      "path": "/assets/gpt-image/empty-states/empty-redemptions.png"
+    },
+    {
+      "name": "empty-weekly",
+      "path": "/assets/gpt-image/empty-states/empty-weekly.png"
+    },
+    {
+      "name": "empty-schedule",
+      "path": "/assets/gpt-image/empty-states/empty-schedule.png"
+    },
+    {
+      "name": "empty-completions",
+      "path": "/assets/gpt-image/empty-states/empty-completions.png"
+    },
+    {
+      "name": "empty-ledger",
+      "path": "/assets/gpt-image/empty-states/empty-ledger.png"
+    }
+  ],
+  "mockups": [
+    {
+      "name": "ui-style-mockup",
+      "path": "/assets/gpt-image/mockups/ui-style-mockup.png"
+    }
+  ]
+}
