@@ -6,7 +6,7 @@ module.exports = {
       args: "start",
       env: {
         NODE_ENV: "production",
-        PORT: "3000",
+        PORT: process.env.PORT || "3001",
         HOSTNAME: "0.0.0.0",
         DATABASE_URL: "file:./dev.db"
       }

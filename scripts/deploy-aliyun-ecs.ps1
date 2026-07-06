@@ -7,6 +7,8 @@ param(
 
   [string]$KeyPath = "",
 
+  [string]$Port = "3001",
+
   [string]$RemoteDir = "/www/grit-learning-habits"
 )
 
@@ -40,13 +42,14 @@ npm ci
 npm run db:init
 npm run build
 if ! command -v pm2 >/dev/null 2>&1; then npm install -g pm2; fi
+export PORT="$Port"
 pm2 startOrRestart ecosystem.config.cjs --update-env
 pm2 save
 "@
 
   $remoteScript | ssh @sshOptions $target "bash -s"
-  Write-Host "Deployed: http://${HostName}:3000/"
-  Write-Host "Admin:    http://${HostName}:3000/admin"
+  Write-Host "Deployed: http://${HostName}:${Port}/"
+  Write-Host "Admin:    http://${HostName}:${Port}/admin"
 }
 finally {
   Pop-Location

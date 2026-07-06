@@ -5,7 +5,7 @@
 ## 服务器要求
 
 - Ubuntu 22.04/24.04 或 Alibaba Cloud Linux。
-- 已开放安全组入方向 TCP `3000`，或配置 Nginx 反向代理到 `3000`。
+- 已开放安全组入方向 TCP `3001`，或配置 Nginx 反向代理到 `3001`。
 - Node.js 20 LTS 或更高版本。
 - Git。
 
@@ -32,14 +32,14 @@ pm2 startup
 也可以在本机 Windows PowerShell 里直接发布当前 Git 提交：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/deploy-aliyun-ecs.ps1 -HostName 服务器公网IP -User root -KeyPath C:\path\to\key.pem
+powershell -ExecutionPolicy Bypass -File scripts/deploy-aliyun-ecs.ps1 -HostName 服务器公网IP -User root -KeyPath C:\path\to\key.pem -Port 3001
 ```
 
 访问：
 
 ```text
-http://服务器公网IP:3000/
-http://服务器公网IP:3000/admin
+http://服务器公网IP:3001/
+http://服务器公网IP:3001/admin
 ```
 
 ## 更新部署

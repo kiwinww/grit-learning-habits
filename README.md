@@ -29,7 +29,7 @@ npm ci
 cp .env.example .env
 npm run db:init
 npm run build
-HOSTNAME=0.0.0.0 PORT=3000 npm start
+HOSTNAME=0.0.0.0 PORT=3001 npm start
 ```
 
 如果使用 PM2：
