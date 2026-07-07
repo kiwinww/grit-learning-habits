@@ -1,0 +1,37 @@
+name: Deploy to Aliyun OSS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build:pages
+
+      - name: Install ossutil
+        run: |
+          curl -L --fail -o ossutil.zip https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil-v1.7.19-linux-amd64.zip
+          unzip -q ossutil.zip
+          chmod +x ossutil-v1.7.19-linux-amd64/ossutil
+          sudo mv ossutil-v1.7.19-linux-amd64/ossutil /usr/local/bin/ossutil
+          ossutil --version
+
+      - name: Upload to Aliyun OSS
+        env:
+          ALIYUN_BUCKET: ${{ secrets.ALIYUN_BUCKET }}
+          ALIYUN_ENDPOINT: ${{ secrets.ALIYUN_ENDPOINT }}
+          ALIYUN_ACCESS_KEY_ID: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ALIYUN_ACCESS_KEY_SECRET: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+        run: |
+          ossutil config -e "$ALIYUN_ENDPOINT" -i "$ALIYUN_ACCESS_KEY_ID" -k "$ALIYUN_ACCESS_KEY_SECRET"
+          ossutil cp -r -f pages-dist/ "oss://$ALIYUN_BUCKET/"

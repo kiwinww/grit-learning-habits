@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>森林星币站</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="森林星币站">
+        <img alt="" src="assets/gpt-image/icons/icon-brand-leaf-coin.png" />
+        <span>森林星币站</span>
+      </a>
+      <nav>
+        <a href="#schedule"><img alt="" src="assets/gpt-image/icons/icon-nav-schedule.png" />今日日程</a>
+        <a href="#weekly"><img alt="" src="assets/gpt-image/icons/icon-nav-weekly.png" />本周成就</a>
+        <a href="#rewards"><img alt="" src="assets/gpt-image/icons/icon-nav-reward.png" />兑换奖励</a>
+        <a href="#admin"><img alt="" src="assets/gpt-image/icons/icon-nav-parent.png" />家长后台</a>
+      </nav>
+    </header>
+
+    <main id="home">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">今天的学习探险</p>
+          <h1>小树，沿着日程小路收集星币</h1>
+          <p>完成学习便利贴，星币马上到账。点错了也能取消，规则清楚，孩子更安心。</p>
+          <div class="notice" id="notice">先看今日日程，完成任务得星币，再兑换奖励。</div>
+        </div>
+        <aside class="coin-panel">
+          <span>我的星币</span>
+          <strong id="coinBalance">0</strong>
+          <span>当前目标</span>
+          <h2 id="targetTitle">动画时间</h2>
+          <div class="progress"><i id="targetProgress"></i></div>
+          <small id="targetHint">还差 8 枚星币</small>
+        </aside>
+      </section>
+
+      <section class="section" id="schedule">
+        <div class="section-title center">
+          <p class="eyebrow">今日日程</p>
+          <h2>便利贴看板</h2>
+        </div>
+        <div class="sticky-grid" id="scheduleGrid"></div>
+      </section>
+
+      <section class="section weekly" id="weekly">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">本周小成就</p>
+            <h2>星星一点点亮起来</h2>
+          </div>
+          <span class="pill" id="weeklySummary">完成 0 个学习任务</span>
+        </div>
+        <div class="badge-grid">
+          <article class="badge active">
+            <img alt="" src="assets/gpt-image/badges/badge-streak.png" />
+            <div><strong>连续坚持</strong><span>完成今日学习任务后点亮</span></div>
+          </article>
+          <article class="badge" id="coinBadge">
+            <img alt="" src="assets/gpt-image/badges/badge-coin-saver.png" />
+            <div><strong>星币积累</strong><span>攒到 15 枚星币点亮</span></div>
+          </article>
+          <article class="badge" id="rewardBadge">
+            <img alt="" src="assets/gpt-image/badges/badge-reward-delivered.png" />
+            <div><strong>奖励兑现</strong><span>完成一次兑换后点亮</span></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="rewards">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">兑换奖励</p>
+            <h2>星币商店</h2>
+          </div>
+          <span class="pill"><span id="shopCoins">0</span> 枚星币</span>
+        </div>
+        <div class="reward-grid" id="rewardGrid"></div>
+      </section>
+
+      <section class="section admin" id="admin">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">家长后台</p>
+            <h2>规则与记录</h2>
+          </div>
+          <button class="button secondary" id="resetButton" type="button">重置演示记录</button>
+        </div>
+        <div class="admin-grid">
+          <article class="admin-card">
+            <h3>星币调节</h3>
+            <label>设置余额<input id="coinInput" min="0" type="number" value="0" /></label>
+            <label>调整原因<input id="reasonInput" value="家长手动调整" /></label>
+            <button class="button" id="saveCoins" type="button">保存星币</button>
+          </article>
+          <article class="admin-card">
+            <h3>星币流水</h3>
+            <div class="record-list" id="ledgerList"></div>
+          </article>
+          <article class="admin-card">
+            <h3>兑换状态</h3>
+            <div class="record-list" id="redemptionList"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

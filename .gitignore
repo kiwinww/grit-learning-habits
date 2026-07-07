@@ -2,6 +2,7 @@ node_modules
 .next
 out
 dist
+pages-dist
 .env
 .env*.local
 public/uploads
