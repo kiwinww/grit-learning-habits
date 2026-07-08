@@ -7,6 +7,7 @@ import { formatDateTime } from "@/lib/dates";
 
 type Props = {
   initialState: AdminState;
+  initialWeeklyReview?: WeeklyReviewView | null;
 };
 
 type TemplateBlock = AdminState["templates"][number]["blocks"][number];
@@ -80,12 +81,12 @@ function scheduleTypeText(type: string) {
   return "日常安排";
 }
 
-export function AdminApp({ initialState }: Props) {
+export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   const [state, setState] = useState(initialState);
   const [message, setMessage] = useState("后台免登录，适合单家庭本地使用。");
   const [busy, setBusy] = useState(false);
   const [weekStart, setWeekStart] = useState(initialState.weeklySummary.weekStart);
-  const [weeklyReview, setWeeklyReview] = useState<WeeklyReviewView | null>(null);
+  const [weeklyReview, setWeeklyReview] = useState<WeeklyReviewView | null>(initialWeeklyReview);
   const [coinBalanceDraft, setCoinBalanceDraft] = useState(String(initialState.child.coinBalance));
   const [coinAdjustReason, setCoinAdjustReason] = useState("家长手动调整");
   const [rewardImageDrafts, setRewardImageDrafts] = useState<

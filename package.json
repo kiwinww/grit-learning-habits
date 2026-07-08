@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "build:pages": "node scripts/build-pages.mjs",
+    "build:pages": "tsx scripts/build-pages.tsx",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:init": "node scripts/init-db.mjs",
