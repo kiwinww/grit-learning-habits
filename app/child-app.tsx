@@ -1,11 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { imageAssets } from "@/lib/assets";
+import {
+  cancelStaticTask,
+  completeStaticTask,
+  loadStaticAppState,
+  redeemStaticReward
+} from "@/lib/static-pages-state";
 import type { AppState, RewardView, ScheduleBlockView } from "@/lib/types";
 
 type Props = {
   initialState: AppState;
+  staticMode?: boolean;
 };
 
 type Notice = {
@@ -182,7 +189,7 @@ function WeeklyAchievement({
   );
 }
 
-export function ChildApp({ initialState }: Props) {
+export function ChildApp({ initialState, staticMode = false }: Props) {
   const [state, setState] = useState(initialState);
   const [notice, setNotice] = useState<Notice>({
     type: "soft",
@@ -195,13 +202,36 @@ export function ChildApp({ initialState }: Props) {
     return Math.min(Math.round((state.child.coinBalance / target.cost) * 100), 100);
   }, [state.child.coinBalance, target]);
 
+  useEffect(() => {
+    if (!staticMode) return;
+
+    const storedState = loadStaticAppState();
+    if (storedState) {
+      setState(storedState);
+    }
+  }, [staticMode]);
+
   async function completeTask(taskId: number, title: string) {
+    if (staticMode) {
+      const nextState = completeStaticTask(state, taskId);
+      setState(nextState);
+      setNotice({ type: "good", text: `完成「${title}」，星币已保存在这个浏览器里。` });
+      return;
+    }
+
     const nextState = await postJson(`/api/tasks/${taskId}/complete`);
     setState(nextState);
     setNotice({ type: "good", text: `完成「${title}」，星币到账。` });
   }
 
   async function cancelTask(taskId: number, title: string) {
+    if (staticMode) {
+      const nextState = cancelStaticTask(state, taskId);
+      setState(nextState);
+      setNotice({ type: "soft", text: `已取消「${title}」，本地星币记录已更新。` });
+      return;
+    }
+
     const nextState = await postJson(`/api/tasks/${taskId}/cancel`);
     setState(nextState);
     setNotice({ type: "soft", text: `已取消「${title}」，星币已扣回。` });
@@ -225,6 +255,13 @@ export function ChildApp({ initialState }: Props) {
   async function redeemReward(reward: RewardView) {
     setBusy(true);
     try {
+      if (staticMode) {
+        const nextState = redeemStaticReward(state, reward.id);
+        setState(nextState);
+        setNotice({ type: "good", text: `兑换成功：${reward.title}，家长后台会看到待兑现记录。` });
+        return;
+      }
+
       const nextState = await postJson(`/api/rewards/${reward.id}/redeem`);
       setState(nextState);
       setNotice({ type: "good", text: `兑换成功：${reward.title}，等家长兑现。` });

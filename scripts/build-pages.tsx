@@ -2,11 +2,13 @@ import "dotenv/config";
 
 import { access, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { build } from "esbuild";
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToString } from "react-dom/server";
 import { AdminApp } from "@/app/admin/admin-app";
 import { ChildApp } from "@/app/child-app";
 import { getAdminState, getAppState } from "@/lib/app-state";
+import type { StaticPagesSnapshot } from "@/lib/static-pages-state";
 import { getWeeklyReviewState } from "@/lib/weekly-review";
 
 const root = process.cwd();
@@ -36,7 +38,11 @@ function rewriteCssPaths(css: string) {
     .replaceAll("url(/assets/", `url(${withBasePath("/assets/")}`);
 }
 
-function renderDocument(title: string, appMarkup: string) {
+function scriptJson(value: unknown) {
+  return JSON.stringify(value).replaceAll("<", "\\u003c");
+}
+
+function renderDocument(title: string, appMarkup: string, snapshot: StaticPagesSnapshot) {
   return `<!doctype html>
 <html lang="zh-CN">
   <head>
@@ -46,7 +52,9 @@ function renderDocument(title: string, appMarkup: string) {
     <link rel="stylesheet" href="${withBasePath("/styles.css")}" />
   </head>
   <body>
-    ${rewriteRootPaths(appMarkup)}
+    <div id="__grit-root">${rewriteRootPaths(appMarkup)}</div>
+    <script>window.__GRIT_PAGES_DATA__=${scriptJson(snapshot)};</script>
+    <script type="module" src="${withBasePath("/pages-client.js")}"></script>
   </body>
 </html>
 `;
@@ -74,16 +82,41 @@ const [appState, adminState, weeklyReview, css] = await Promise.all([
   readFile(join(root, "app", "globals.css"), "utf8")
 ]);
 
-const homeMarkup = renderToStaticMarkup(<ChildApp initialState={appState} />);
-const adminMarkup = renderToStaticMarkup(
-  <AdminApp initialState={adminState} initialWeeklyReview={weeklyReview} />
+await build({
+  entryPoints: [join(root, "scripts", "pages-client.tsx")],
+  bundle: true,
+  format: "esm",
+  minify: true,
+  outfile: join(destination, "pages-client.js"),
+  platform: "browser",
+  sourcemap: false,
+  tsconfig: join(root, "tsconfig.json")
+});
+
+const baseSnapshot = {
+  appState,
+  adminState,
+  weeklyReview
+};
+const homeMarkup = renderToString(<ChildApp initialState={appState} staticMode />);
+const adminMarkup = renderToString(
+  <AdminApp initialState={adminState} initialWeeklyReview={weeklyReview} staticMode />
 );
 
 await writeFile(join(destination, "styles.css"), rewriteCssPaths(css));
-await writeFile(join(destination, "index.html"), renderDocument("森林星币站", homeMarkup));
+await writeFile(
+  join(destination, "index.html"),
+  renderDocument("森林星币站", homeMarkup, {
+    ...baseSnapshot,
+    page: "home"
+  })
+);
 await writeFile(
   join(destination, "admin", "index.html"),
-  renderDocument("家长后台 - 森林星币站", adminMarkup)
+  renderDocument("家长后台 - 森林星币站", adminMarkup, {
+    ...baseSnapshot,
+    page: "admin"
+  })
 );
 await writeFile(join(destination, ".nojekyll"), "");
 

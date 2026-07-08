@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { imageAssets } from "@/lib/assets";
+import {
+  commitStaticAdminState,
+  loadStaticAdminState,
+  resetStaticDemoRecords,
+  scheduleFromTemplate
+} from "@/lib/static-pages-state";
 import type { AdminState, WeeklyReviewView } from "@/lib/types";
 import { formatDateTime } from "@/lib/dates";
 
 type Props = {
   initialState: AdminState;
   initialWeeklyReview?: WeeklyReviewView | null;
+  staticMode?: boolean;
 };
 
 type TemplateBlock = AdminState["templates"][number]["blocks"][number];
@@ -81,7 +88,7 @@ function scheduleTypeText(type: string) {
   return "日常安排";
 }
 
-export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
+export function AdminApp({ initialState, initialWeeklyReview = null, staticMode = false }: Props) {
   const [state, setState] = useState(initialState);
   const [message, setMessage] = useState("后台免登录，适合单家庭本地使用。");
   const [busy, setBusy] = useState(false);
@@ -99,6 +106,20 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
     [state.recent.redemptions]
   );
 
+  function applyStaticSnapshot(
+    snapshot: ReturnType<typeof commitStaticAdminState>,
+    success: string
+  ) {
+    setState(snapshot.adminState);
+    setWeeklyReview(snapshot.weeklyReview);
+    setWeekStart(snapshot.weeklyReview.weekStart);
+    setMessage(success);
+  }
+
+  function commitStaticState(nextState: AdminState, success: string) {
+    applyStaticSnapshot(commitStaticAdminState(nextState, weeklyReview), success);
+  }
+
   useEffect(
     () => () => {
       previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -107,6 +128,19 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   );
 
   useEffect(() => {
+    if (!staticMode) return;
+
+    const storedState = loadStaticAdminState();
+    if (storedState) {
+      setState(storedState.adminState);
+      setWeeklyReview(storedState.weeklyReview);
+      setWeekStart(storedState.weeklyReview.weekStart);
+    }
+  }, [staticMode]);
+
+  useEffect(() => {
+    if (staticMode) return;
+
     let cancelled = false;
 
     fetchWeeklyReview(weekStart)
@@ -124,7 +158,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [weekStart]);
+  }, [staticMode, weekStart]);
 
   useEffect(() => {
     setCoinBalanceDraft(String(state.child.coinBalance));
@@ -185,6 +219,15 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
     }));
   }
 
+  function fileToDataUrl(file: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
   function updateRewardImageDraft(rewardId: number, file: File | null) {
     setRewardImageDrafts((current) => {
       const previous = current[rewardId];
@@ -217,6 +260,10 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
     try {
       await action();
       setMessage(success);
+      if (staticMode) {
+        setBusy(false);
+        return;
+      }
       window.location.reload();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "操作失败");
@@ -240,6 +287,11 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
 
     setBusy(true);
     try {
+      if (staticMode) {
+        applyStaticSnapshot(commitStaticAdminState(state, weeklyReview), "周复盘已保存在这个浏览器里");
+        return;
+      }
+
       await sendJson("/api/admin/weekly-review", "POST", {
         weekStart: weeklyReview.weekStart,
         observation: weeklyReview.review.observation,
@@ -286,6 +338,32 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
 
   async function saveScheduleTemplate() {
     if (!template) return;
+
+    if (staticMode) {
+      const nextState = {
+        ...state,
+        templates: state.templates.map((item) =>
+          item.id === template.id
+            ? {
+                ...item,
+                blocks: item.blocks.map((block, index) => ({
+                  ...block,
+                  sortOrder: index + 1
+                }))
+              }
+            : item
+        )
+      };
+      commitStaticState(
+        {
+          ...nextState,
+          schedule: scheduleFromTemplate(nextState)
+        },
+        "今日日程模板已保存在这个浏览器里"
+      );
+      return;
+    }
+
     await withRefresh(
       () =>
         sendJson(`/api/admin/schedule-templates/${template.id}`, "PATCH", {
@@ -303,6 +381,26 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   }
 
   async function addTask(formData: FormData) {
+    if (staticMode) {
+      const task: TaskItem = {
+        id: Math.max(0, ...state.tasks.map((item) => item.id)) + 1,
+        title: String(formData.get("title") ?? ""),
+        description: String(formData.get("description") ?? ""),
+        points: Number(formData.get("points") ?? 0),
+        enabled: true,
+        sortOrder: state.tasks.length + 1,
+        completedToday: false
+      };
+      commitStaticState(
+        {
+          ...state,
+          tasks: [...state.tasks, task]
+        },
+        "任务已新增并保存在这个浏览器里"
+      );
+      return;
+    }
+
     await withRefresh(
       () =>
         sendJson("/api/admin/tasks", "POST", {
@@ -315,6 +413,17 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   }
 
   async function saveTask(task: TaskItem) {
+    if (staticMode) {
+      commitStaticState(
+        {
+          ...state,
+          tasks: state.tasks.map((item) => (item.id === task.id ? task : item))
+        },
+        "任务已保存在这个浏览器里"
+      );
+      return;
+    }
+
     await withRefresh(
       () =>
         sendJson(`/api/admin/tasks/${task.id}`, "PATCH", {
@@ -330,6 +439,31 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   async function addReward(formData: FormData) {
     const image = formData.get("image");
     const imageFile = image instanceof File && image.size > 0 ? image : null;
+
+    if (staticMode) {
+      const rewardId = Math.max(0, ...state.rewards.map((item) => item.id)) + 1;
+      const reward: RewardItem = {
+        id: rewardId,
+        title: String(formData.get("title") ?? ""),
+        description: String(formData.get("description") ?? ""),
+        cost: Number(formData.get("cost") ?? 0),
+        tier: String(formData.get("tier") ?? "自定义奖励"),
+        category: "custom",
+        imageUrl: imageFile ? await fileToDataUrl(imageFile) : null,
+        defaultImageUrl: imageAssets.rewards.choice,
+        enabled: true,
+        sortOrder: state.rewards.length + 1,
+        canRedeem: state.child.coinBalance >= Number(formData.get("cost") ?? 0)
+      };
+      commitStaticState(
+        {
+          ...state,
+          rewards: [...state.rewards, reward]
+        },
+        "奖励已新增并保存在这个浏览器里"
+      );
+      return;
+    }
 
     await withRefresh(
       async () => {
@@ -352,6 +486,25 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   async function saveReward(reward: RewardItem) {
     const imageDraft = rewardImageDrafts[reward.id];
 
+    if (staticMode) {
+      const imageUrl = imageDraft ? await fileToDataUrl(imageDraft.file) : reward.imageUrl;
+      commitStaticState(
+        {
+          ...state,
+          rewards: state.rewards.map((item) =>
+            item.id === reward.id ? { ...reward, imageUrl } : item
+          )
+        },
+        "奖励已保存在这个浏览器里"
+      );
+      setRewardImageDrafts((current) => {
+        const next = { ...current };
+        delete next[reward.id];
+        return next;
+      });
+      return;
+    }
+
     await withRefresh(
       async () => {
         await sendJson(`/api/admin/rewards/${reward.id}`, "PATCH", {
@@ -372,6 +525,45 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   }
 
   async function addDailyScheduleItem(formData: FormData) {
+    if (staticMode) {
+      const taskId = Number(formData.get("taskId") ?? 0) || null;
+      const task = taskId ? state.tasks.find((item) => item.id === taskId) ?? null : null;
+      const id = Date.now();
+      const block = {
+        id: `override-${id}`,
+        sourceId: null,
+        startTime: String(formData.get("startTime") ?? ""),
+        endTime: String(formData.get("endTime") ?? ""),
+        title: String(formData.get("title") ?? ""),
+        description: String(formData.get("description") ?? ""),
+        type: String(formData.get("type") ?? "routine"),
+        taskId,
+        taskTitle: task?.title ?? null,
+        points: task?.points ?? null,
+        completedToday: task?.completedToday ?? false,
+        sortOrder: 50
+      };
+      commitStaticState(
+        {
+          ...state,
+          schedule: [...state.schedule, block],
+          overrides: [
+            {
+              id,
+              date: state.today,
+              action: "add",
+              title: block.title,
+              startTime: block.startTime,
+              endTime: block.endTime
+            },
+            ...state.overrides
+          ].slice(0, 20)
+        },
+        "今日日程已添加并保存在这个浏览器里"
+      );
+      return;
+    }
+
     await withRefresh(
       () =>
         sendJson("/api/admin/daily-schedule", "POST", {
@@ -390,6 +582,54 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
   }
 
   async function updateRedemption(id: number, action: "deliver" | "cancel") {
+    if (staticMode) {
+      const redemption = state.recent.redemptions.find((item) => item.id === id);
+      if (!redemption) return;
+
+      const cancelled = action === "cancel";
+      const nextState = {
+        ...state,
+        child: {
+          ...state.child,
+          coinBalance:
+            cancelled && redemption.status === "requested"
+              ? state.child.coinBalance + redemption.cost
+              : state.child.coinBalance
+        },
+        recent: {
+          ...state.recent,
+          redemptions: state.recent.redemptions.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  status: cancelled ? "cancelled" : "delivered",
+                  deliveredAt: cancelled ? item.deliveredAt : new Date().toISOString(),
+                  cancelledAt: cancelled ? new Date().toISOString() : item.cancelledAt
+                }
+              : item
+          ),
+          ledger:
+            cancelled && redemption.status === "requested"
+              ? [
+                  {
+                    id: Math.max(0, ...state.recent.ledger.map((item) => item.id)) + 1,
+                    amount: redemption.cost,
+                    reason: `取消兑换 ${redemption.title}`,
+                    sourceType: "redemption_cancel",
+                    createdAt: new Date().toISOString()
+                  },
+                  ...state.recent.ledger
+                ]
+              : state.recent.ledger
+        }
+      };
+      commitStaticState(
+        nextState,
+        cancelled ? "兑换已取消，星币已退回本地记录" : "奖励已标记为兑现"
+      );
+      return;
+    }
+
     await withRefresh(
       () => sendJson(`/api/admin/redemptions/${id}/${action}`, "POST", {}),
       action === "deliver" ? "奖励已标记为兑现" : "兑换已取消并退回星币"
@@ -407,6 +647,39 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
 
     setBusy(true);
     try {
+      if (staticMode) {
+        const roundedBalance = Math.round(nextBalance);
+        const difference = roundedBalance - state.child.coinBalance;
+        const nextState = {
+          ...state,
+          child: {
+            ...state.child,
+            coinBalance: roundedBalance
+          },
+          recent: {
+            ...state.recent,
+            ledger:
+              difference === 0
+                ? state.recent.ledger
+                : [
+                    {
+                      id: Math.max(0, ...state.recent.ledger.map((item) => item.id)) + 1,
+                      amount: difference,
+                      reason: coinAdjustReason,
+                      sourceType: "manual_adjust",
+                      createdAt: new Date().toISOString()
+                    },
+                    ...state.recent.ledger
+                  ]
+          }
+        };
+        applyStaticSnapshot(
+          commitStaticAdminState(nextState, weeklyReview),
+          "星币余额已保存在这个浏览器里"
+        );
+        return;
+      }
+
       const nextState = (await sendJson("/api/admin/coins", "POST", {
         balance: Math.round(nextBalance),
         reason: coinAdjustReason
@@ -432,6 +705,14 @@ export function AdminApp({ initialState, initialWeeklyReview = null }: Props) {
 
     setBusy(true);
     try {
+      if (staticMode) {
+        applyStaticSnapshot(
+          resetStaticDemoRecords(state, weeklyReview),
+          "演示记录已在这个浏览器里重置"
+        );
+        return;
+      }
+
       const nextState = (await sendJson("/api/admin/reset-demo-records", "POST", {})) as AdminState;
       setState(nextState);
       setWeekStart(nextState.weeklySummary.weekStart);

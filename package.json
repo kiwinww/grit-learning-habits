@@ -28,5 +28,21 @@
     "prisma": "6.19.3",
     "tsx": "4.21.0",
     "typescript": "5.9.3"
-  }
+  },
+  "description": "这是一个面向单家庭使用的儿童学习习惯培养系统，包含孩子端和家长后台。",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiwinww/grit-learning-habits.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kiwinww/grit-learning-habits/issues"
+  },
+  "homepage": "https://github.com/kiwinww/grit-learning-habits#readme"
 }
