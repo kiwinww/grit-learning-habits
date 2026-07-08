@@ -30,7 +30,13 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run db:init
+        env:
+          DATABASE_URL: file:./dev.db
+
       - run: npm run build:pages
+        env:
+          DATABASE_URL: file:./dev.db
 
       - uses: actions/configure-pages@v5
 
