@@ -7,141 +7,177 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model FamilySetting {
+  id                 Int       @id
+  familyName         String
+  timezone           String    @default("Asia/Hong_Kong")
+  weekStartsOn       Int       @default(1)
+  parentPinHash      String
+  parentPinSalt      String
+  failedPinAttempts  Int       @default(0)
+  pinLockedUntil     DateTime?
+  animationsEnabled Boolean   @default(true)
+  soundEnabled       Boolean   @default(false)
+  allowBackfill      Boolean   @default(true)
+  targetRewardId     Int?
+  initializedAt      DateTime  @default(now())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
 model Child {
-  id              Int              @id @default(autoincrement())
-  slug            String           @unique
-  name            String
-  avatar          String
-  coinBalance     Int              @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  completions     TaskCompletion[]
-  redemptions     Redemption[]
-  coinLedgerItems CoinLedger[]
-  weeklyReviews   WeeklyReview[]
+  id            Int               @id @default(autoincrement())
+  nickname      String
+  avatar        String            @default("leaf")
+  enabled       Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  completions   Completion[]
+  transactions  CoinTransaction[]
+  redemptions   Redemption[]
+  weeklyReviews WeeklyReview[]
 }
 
-model ScheduleTemplate {
-  id        Int             @id @default(autoincrement())
-  slug      String          @unique
-  name      String
-  weekdays  String
-  enabled   Boolean         @default(true)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  blocks    ScheduleBlock[]
+model Task {
+  id               Int          @id @default(autoincrement())
+  title            String
+  childDescription String
+  category         String       @default("learning")
+  points           Int
+  requiresApproval Boolean      @default(false)
+  isCore           Boolean      @default(false)
+  enabled          Boolean      @default(true)
+  sortOrder        Int          @default(0)
+  habitStage       String       @default("starter")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  schedules        Schedule[]
+  completions      Completion[]
 }
 
-model ScheduleBlock {
-  id          Int                     @id @default(autoincrement())
-  slug        String                  @unique
-  templateId  Int
-  taskId      Int?
-  startTime   String
-  endTime     String
-  title       String
-  description String
-  type        String
-  enabled     Boolean                 @default(true)
-  sortOrder   Int
-  template    ScheduleTemplate        @relation(fields: [templateId], references: [id])
-  task        TaskTemplate?           @relation(fields: [taskId], references: [id])
-  overrides   DailyScheduleOverride[]
+model Schedule {
+  id           Int       @id @default(autoincrement())
+  taskId       Int?
+  title        String
+  description  String
+  scheduleType String    @default("weekly")
+  weekday      Int?
+  specificDate String?
+  startTime    String
+  endTime      String
+  reminder     Boolean   @default(true)
+  enabled      Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  task         Task?     @relation(fields: [taskId], references: [id])
+
+  @@index([weekday, enabled])
+  @@index([specificDate, enabled])
 }
 
-model DailyScheduleOverride {
-  id          Int            @id @default(autoincrement())
-  date        String
-  blockId     Int?
-  action      String
-  startTime   String?
-  endTime     String?
-  title       String?
-  description String?
-  type        String?
-  taskId      Int?
-  sortOrder   Int?
-  createdAt   DateTime       @default(now())
-  block       ScheduleBlock? @relation(fields: [blockId], references: [id])
+model Completion {
+  id                  Int               @id @default(autoincrement())
+  childId             Int
+  taskId              Int
+  businessDate        String
+  completedAt         DateTime          @default(now())
+  status              String            @default("approved")
+  pointsAwarded       Int
+  taskTitleSnapshot   String
+  taskDetailsSnapshot String
+  isBackfill          Boolean           @default(false)
+  countForStreak      Boolean           @default(true)
+  approvedAt          DateTime?
+  revokedAt           DateTime?
+  revokeReason        String?
+  idempotencyKey      String            @unique
+  child               Child             @relation(fields: [childId], references: [id])
+  task                Task              @relation(fields: [taskId], references: [id])
+  transactions        CoinTransaction[]
+
+  @@unique([childId, taskId, businessDate])
+  @@index([businessDate, status])
 }
 
-model TaskTemplate {
-  id             Int              @id @default(autoincrement())
-  slug           String           @unique
-  title          String
-  description    String
-  points         Int
-  enabled        Boolean          @default(true)
-  sortOrder      Int
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  completions    TaskCompletion[]
-  scheduleBlocks ScheduleBlock[]
-}
+model CoinTransaction {
+  id             Int         @id @default(autoincrement())
+  childId        Int
+  amount         Int
+  type           String
+  reason         String
+  sourceType     String
+  sourceId       Int?
+  idempotencyKey String      @unique
+  createdAt      DateTime    @default(now())
+  child          Child       @relation(fields: [childId], references: [id])
+  completionId   Int?
+  completion     Completion? @relation(fields: [completionId], references: [id])
 
-model TaskCompletion {
-  id            Int          @id @default(autoincrement())
-  childId       Int
-  taskId        Int
-  date          String
-  completedAt   DateTime     @default(now())
-  pointsAwarded Int
-  child         Child        @relation(fields: [childId], references: [id])
-  task          TaskTemplate @relation(fields: [taskId], references: [id])
-
-  @@unique([childId, taskId, date])
+  @@index([childId, createdAt])
 }
 
 model Reward {
-  id          Int          @id @default(autoincrement())
-  slug        String       @unique
-  title       String
-  description String
-  cost        Int
-  tier        String
-  category    String
-  imageUrl    String?
-  enabled     Boolean      @default(true)
-  sortOrder   Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  redemptions Redemption[]
+  id                         Int          @id @default(autoincrement())
+  title                      String
+  description                String
+  cost                       Int
+  category                   String       @default("experience")
+  imageMime                  String?
+  imageData                  Bytes?
+  dailyLimit                 Int?
+  weeklyLimit                Int?
+  requiresParentConfirmation Boolean      @default(true)
+  enabled                    Boolean      @default(true)
+  sortOrder                  Int          @default(0)
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+  redemptions                Redemption[]
 }
 
 model Redemption {
-  id          Int       @id @default(autoincrement())
-  childId     Int
-  rewardId    Int
-  cost        Int
-  status      String
-  requestedAt DateTime  @default(now())
-  deliveredAt DateTime?
-  cancelledAt DateTime?
-  child       Child     @relation(fields: [childId], references: [id])
-  reward      Reward    @relation(fields: [rewardId], references: [id])
-}
+  id                        Int       @id @default(autoincrement())
+  childId                   Int
+  rewardId                  Int
+  actualCost                Int
+  rewardTitleSnapshot       String
+  rewardDescriptionSnapshot String
+  status                    String    @default("pending")
+  requestedAt               DateTime  @default(now())
+  fulfilledAt               DateTime?
+  cancelledAt               DateTime?
+  cancelReason              String?
+  refundTransactionId       Int?      @unique
+  idempotencyKey            String    @unique
+  child                     Child     @relation(fields: [childId], references: [id])
+  reward                    Reward    @relation(fields: [rewardId], references: [id])
 
-model CoinLedger {
-  id         Int      @id @default(autoincrement())
-  childId    Int
-  amount     Int
-  reason     String
-  sourceType String
-  sourceId   Int?
-  createdAt  DateTime @default(now())
-  child      Child    @relation(fields: [childId], references: [id])
+  @@index([childId, requestedAt])
+  @@index([status])
 }
 
 model WeeklyReview {
-  id          Int      @id @default(autoincrement())
-  childId     Int
-  weekStart   String
-  weekEnd     String
-  observation String   @default("")
-  nextFocus   String   @default("")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  child       Child    @relation(fields: [childId], references: [id])
+  id           Int      @id @default(autoincrement())
+  childId      Int
+  weekStart    String
+  weekEnd      String
+  wins         String   @default("")
+  difficulties String   @default("")
+  nextFocus    String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  child        Child    @relation(fields: [childId], references: [id])
 
   @@unique([childId, weekStart])
+}
+
+model ParentSession {
+  id         Int       @id @default(autoincrement())
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  @@index([expiresAt, revokedAt])
 }
