@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Button, Card, Input, Loading, Modal, Select, Switch, Table, Tag, Title, Wallet, type TableColumn } from "animal-island-ui";
 import { SiteFooter } from "@/app/site-footer";
+import { MotionPreference } from "@/app/interaction-shell";
+import { shouldReduceMotion, TransitionLink, waitForViewExit } from "@/app/route-transition";
 import type { AdminState } from "@/lib/contracts";
 import { Notification } from "@/lib/animal-notification";
 
@@ -22,17 +24,33 @@ export function AdminPortal() {
   const [confirm, setConfirm] = useState<ConfirmState>(null);
   const [reason, setReason] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+  const [viewLeaving, setViewLeaving] = useState(false);
 
-  async function load() {
-    setLoading(true);
+  async function swapPortalState(next: AdminState | null, motionEnabled: boolean) {
+    if (!shouldReduceMotion(motionEnabled)) {
+      setViewLeaving(true);
+      await waitForViewExit(motionEnabled);
+    }
+    setState(next);
+    setViewLeaving(false);
+  }
+
+  async function load(animate = false) {
+    if (!animate) setLoading(true);
     try {
       const response = await fetch("/api/admin/state", { cache: "no-store" });
       const result = await parseResponse(response);
-      if (result.authenticated === false) { setState(null); return; }
-      setState(result as AdminState);
+      if (result.authenticated === false) {
+        if (animate) await swapPortalState(null, state?.family.animationsEnabled ?? true);
+        else setState(null);
+        return;
+      }
+      const next = result as AdminState;
+      if (animate) await swapPortalState(next, next.family.animationsEnabled);
+      else setState(next);
     } catch (error) {
       Notification.error({ message: "后台加载失败", description: error instanceof Error ? error.message : "请稍后重试。" });
-    } finally { setLoading(false); }
+    } finally { if (!animate) setLoading(false); }
   }
 
   useEffect(() => { load(); }, []);
@@ -43,7 +61,7 @@ export function AdminPortal() {
     try {
       await parseResponse(await fetch("/api/parent/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pin }) }));
       setPin("");
-      await load();
+      await load(true);
       Notification.success("已进入家长模式");
     } catch (error) {
       Notification.error({ message: "无法进入后台", description: error instanceof Error ? error.message : "请检查 PIN。" });
@@ -64,18 +82,18 @@ export function AdminPortal() {
 
   async function logout() {
     await fetch("/api/parent/session", { method: "DELETE" });
-    setState(null);
+    await swapPortalState(null, state?.family.animationsEnabled ?? true);
   }
 
   if (loading) return <main className="center-page" id="main-content"><Loading active /><p>正在打开家长后台…</p></main>;
   if (!state) {
     return (
-      <main className="parent-login" id="main-content">
+      <main className={`parent-login portal-view-transition${viewLeaving ? " view-leaving" : ""}`} id="main-content">
         <Card className="login-card" pattern="app-teal">
           <p className="eyebrow">家长专属区域</p><Title color="app-teal" size="large">输入家长 PIN</Title>
           <p>孩子无法通过修改网址进入这里。连续输错五次会暂时锁定五分钟。</p>
           <form onSubmit={login}><label className="field"><span>4–6 位数字 PIN</span><Input autoFocus inputMode="numeric" maxLength={6} pattern="[0-9]{4,6}" required shadow size="large" type="password" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, ""))} /></label><Button block htmlType="submit" loading={busy} size="large" type="primary">进入后台</Button></form>
-          <a className="back-link" href="/">← 返回孩子端</a>
+          <TransitionLink className="back-link" href="/">← 返回孩子端</TransitionLink>
         </Card>
       </main>
     );
@@ -92,8 +110,9 @@ export function AdminPortal() {
   ];
 
   return (
-    <div className="admin-shell">
-      <header className="admin-header"><a className="brand" href="/"><span aria-hidden="true">★</span><strong>{state.family.name}</strong></a><div><a className="parent-link" href="/">孩子端</a><Button htmlType="button" onClick={logout} size="small" type="text">退出家长模式</Button></div></header>
+    <div className={`${state.family.animationsEnabled ? "admin-shell" : "admin-shell reduce-motion"} portal-view-transition${viewLeaving ? " view-leaving" : ""}`}>
+      <MotionPreference enabled={state.family.animationsEnabled} />
+      <header className="admin-header"><TransitionLink className="brand" href="/" motionEnabled={state.family.animationsEnabled}><span aria-hidden="true">★</span><strong>{state.family.name}</strong></TransitionLink><div><TransitionLink className="parent-link" href="/" motionEnabled={state.family.animationsEnabled}>孩子端</TransitionLink><Button htmlType="button" onClick={logout} size="small" type="text">退出家长模式</Button></div></header>
       <main className="admin-main" id="main-content">
         <section className="admin-hero"><div><p className="eyebrow">家长后台</p><h1>今天少催一点，多看见一点</h1><p>所有星币变化都有记录。修改任务只影响未来，不会改写过去。</p></div><Card color="app-teal"><span>当前余额</span><Wallet size="large" value={state.balance} /></Card></section>
         <div className="admin-tablist" role="tablist" aria-label="家长后台功能">

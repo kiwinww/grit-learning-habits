@@ -16,6 +16,9 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; background: var(--paper); }
 body { margin: 0; color: var(--ink); background: var(--paper); font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+.interaction-shell, .route-stage { min-height: 100vh; }
+.route-stage { background: var(--paper); animation: route-enter .22s cubic-bezier(.22,.72,.24,1); transition: opacity .16s ease, transform .16s ease; }
+html[data-route-leaving="true"] .route-stage { opacity: 0; transform: translateY(4px); }
 button, input, select, textarea { font: inherit; }
 a { color: var(--forest-dark); }
 img { max-width: 100%; display: block; }
@@ -33,9 +36,10 @@ p { line-height: 1.7; }
 .parent-link, .back-link { display: inline-flex; min-height: 44px; align-items: center; padding: .45rem .8rem; border-radius: 999px; font-weight: 800; text-decoration: none; }
 .kid-header, .admin-header { position: sticky; z-index: 50; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 72px; padding: .65rem 1rem; border-bottom: 1px solid rgba(79,67,47,.12); background: rgba(247,240,217,.94); backdrop-filter: blur(12px); }
 .admin-header > div { display: flex; align-items: center; gap: .25rem; }
+.app-shell { min-height: 100vh; background-color: var(--paper); background-image: linear-gradient(rgba(247,240,217,.68), rgba(247,240,217,.82)), url("/visuals/family-star-island.webp"); background-repeat: no-repeat, repeat; background-size: cover, 520px 520px; background-position: 0 0, 100% 0; animation: island-background-drift 120s linear infinite; }
 .app-shell main, .admin-main { width: min(100% - 2rem, 1180px); margin: 0 auto; }
 .kid-hero { display: grid; gap: 1rem; min-height: 500px; align-items: center; padding: 2.25rem 0 1.5rem; }
-.kid-hero::before { content: ""; position: absolute; z-index: -1; inset: 72px 0 auto; height: 540px; background: radial-gradient(circle at 82% 22%, rgba(130,213,187,.4), transparent 36%), linear-gradient(180deg, #fff8e5, var(--paper)); }
+.kid-hero::before { content: ""; position: absolute; z-index: -1; inset: 72px 0 auto; height: 540px; background: radial-gradient(circle at 82% 22%, rgba(130,213,187,.32), transparent 36%), linear-gradient(180deg, rgba(255,248,229,.32), rgba(247,240,217,.68)); }
 .hero-progress { max-width: 34rem; margin-top: 2rem; }
 .hero-progress > span { display: block; margin-bottom: .55rem; font-weight: 900; }
 .wallet-card { display: grid; gap: .55rem; min-height: 205px; align-content: center; text-align: center; }
@@ -103,7 +107,7 @@ p { line-height: 1.7; }
 .field input[type="file"] { min-height: 48px; padding: .65rem; border: 2px dashed #9a835a; border-radius: 16px; background: #fffdf6; }
 .back-link { margin-top: 1rem; }
 
-.admin-shell { min-height: 100vh; background: #f4eedb; }
+.admin-shell { min-height: 100vh; background-color: #f4eedb; background-image: linear-gradient(rgba(244,238,219,.91), rgba(244,238,219,.95)), url("/visuals/family-star-island.webp"); background-repeat: no-repeat, repeat; background-size: cover, 820px 820px; }
 .admin-main { padding: 2rem 0 5rem; }
 .admin-hero { display: grid; gap: 1rem; align-items: center; margin-bottom: 2rem; }
 .admin-hero h1 { font-size: clamp(2rem, 6vw, 4rem); }
@@ -121,10 +125,55 @@ p { line-height: 1.7; }
 .admin-tablist { display: flex; max-width: 100%; gap: .4rem; padding: .4rem; overflow-x: auto; border: 2px solid rgba(79,67,47,.2); border-radius: 20px; background: #fffaf0; box-shadow: 0 5px 0 rgba(79,67,47,.25); }
 .admin-tablist button { min-width: max-content; min-height: 48px; padding: .65rem 1rem; border: 0; border-radius: 15px; background: transparent; color: var(--muted); font-weight: 900; cursor: pointer; }
 .admin-tablist button[aria-selected="true"] { background: var(--teal); color: var(--ink); }
-.admin-tabpanel { min-height: 520px; }
+.admin-tabpanel { min-height: 520px; animation: tab-enter .18s cubic-bezier(.22,.72,.24,1) both; }
+.child-view-transition { animation: child-view-enter .22s cubic-bezier(.22,.72,.24,1) both; }
+.portal-view-transition { animation: portal-view-enter .22s cubic-bezier(.22,.72,.24,1); transition: opacity .16s ease, transform .16s ease; }
+.view-leaving { opacity: 0; transform: translateY(4px); }
+
+@keyframes route-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes child-view-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tab-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes portal-view-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes island-background-drift {
+  from { background-position: 0 0, 100% 0; }
+  to { background-position: 0 0, 0 100%; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .animal-cursor--force, .animal-cursor--force * { cursor: url("/visuals/game-cursor.png") 4 0, auto !important; }
+  .interaction-shell input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([disabled]),
+  .interaction-shell textarea:not([disabled]) { cursor: text !important; }
+  .interaction-shell [disabled], .interaction-shell [aria-disabled="true"] { cursor: not-allowed !important; }
+  .interaction-shell button, .interaction-shell .parent-link, .interaction-shell .back-link, .interaction-shell .download-button { transition: transform .2s ease, filter .2s ease; }
+  .interaction-shell button:not(:disabled):hover, .interaction-shell .parent-link:hover, .interaction-shell .back-link:hover, .interaction-shell .download-button:hover { transform: translateY(-2px) rotate(-.25deg); filter: saturate(1.04); }
+  .interaction-shell button:not(:disabled):active, .interaction-shell .parent-link:active, .interaction-shell .back-link:active, .interaction-shell .download-button:active { transform: translateY(1px) scale(.98); }
+  .schedule-card, .reward-card, .badge-card { transition: transform .26s cubic-bezier(.22,.72,.24,1), box-shadow .26s ease; }
+  .schedule-card:hover, .reward-card:hover, .badge-card:hover { transform: translateY(-3px); }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .interaction-shell, .interaction-shell * { cursor: auto !important; }
+}
 
 @media (min-width: 768px) {
   .kid-header, .admin-header { padding-inline: 2rem; }
+  .app-shell { background-size: cover, 720px 720px; animation-duration: 80s; }
   .kid-hero { grid-template-columns: minmax(0, 1.5fr) minmax(280px, .7fr); min-height: 610px; }
   .schedule-card { grid-template-columns: auto minmax(0,1fr) auto; padding: 1.4rem; }
   .schedule-card > button, .reminder-mark { grid-column: auto; min-width: 160px; }
@@ -153,4 +202,5 @@ p { line-height: 1.7; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
-.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+.reduce-motion, .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after,
+.family-reduce-motion *, .family-reduce-motion *::before, .family-reduce-motion *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

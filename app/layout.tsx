@@ -3,6 +3,7 @@ import "animal-island-ui/style";
 import "./globals.css";
 import { PwaRegister } from "@/app/pwa-register";
 import { NotificationHost } from "@/app/notification-host";
+import { InteractionShell } from "@/app/interaction-shell";
 
 export const metadata: Metadata = {
   title: { default: "家庭星币成长站", template: "%s｜家庭星币成长站" },
@@ -23,10 +24,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN">
       <body>
-        <a className="skip-link" href="#main-content">跳到主要内容</a>
-        {children}
-        <NotificationHost />
-        <PwaRegister />
+        <InteractionShell>
+          <a className="skip-link" href="#main-content">跳到主要内容</a>
+          {children}
+          <NotificationHost />
+          <PwaRegister />
+        </InteractionShell>
       </body>
     </html>
   );

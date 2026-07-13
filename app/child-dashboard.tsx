@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Loading, Modal, Progress, Tag, Title, Wallet } from "animal-island-ui";
 import { SiteFooter } from "@/app/site-footer";
+import { MotionPreference } from "@/app/interaction-shell";
+import { shouldReduceMotion, TransitionLink } from "@/app/route-transition";
 import type { ChildState } from "@/lib/contracts";
 import { Notification } from "@/lib/animal-notification";
 
@@ -166,9 +168,10 @@ export function ChildDashboard({ initialState }: { initialState: ChildState }) {
 
   return (
     <div className={state.family.animationsEnabled ? "app-shell" : "app-shell reduce-motion"}>
-      <header className="kid-header"><a className="brand" href="/"><span aria-hidden="true">★</span><strong>{state.family.name}</strong></a><a className="parent-link" href="/admin">家长入口</a></header>
-      <main id="main-content">{currentContent}</main>
-      <nav aria-label="孩子端主导航" className="bottom-nav">{nav.map((item) => <button aria-current={view === item.key ? "page" : undefined} key={item.key} onClick={() => { setView(item.key); window.scrollTo({ top: 0, behavior: "smooth" }); }} type="button"><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}</nav>
+      <MotionPreference enabled={state.family.animationsEnabled} />
+      <header className="kid-header"><TransitionLink className="brand" href="/" motionEnabled={state.family.animationsEnabled}><span aria-hidden="true">★</span><strong>{state.family.name}</strong></TransitionLink><TransitionLink className="parent-link" href="/admin" motionEnabled={state.family.animationsEnabled}>家长入口</TransitionLink></header>
+      <main id="main-content"><div className="child-view-transition" key={view}>{currentContent}</div></main>
+      <nav aria-label="孩子端主导航" className="bottom-nav">{nav.map((item) => <button aria-current={view === item.key ? "page" : undefined} key={item.key} onClick={() => { if (view === item.key) return; setView(item.key); window.scrollTo({ top: 0, behavior: shouldReduceMotion(state.family.animationsEnabled) ? "auto" : "smooth" }); }} type="button"><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}</nav>
       <SiteFooter />
       <Loading active={busy} />
       <Modal footer={<><Button htmlType="button" onClick={() => setRedeeming(null)}>再想想</Button><Button htmlType="button" onClick={() => { if (redeeming) action({ action: "redeemReward", rewardId: redeeming.id, idempotencyKey: crypto.randomUUID() }, "兑换成功，等家长兑现吧！"); setRedeeming(null); }} type="primary">确认兑换</Button></>} onClose={() => setRedeeming(null)} open={Boolean(redeeming)} title="确认兑换" typewriter={false}>

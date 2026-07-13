@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Form, Input, Select, Title } from "animal-island-ui";
+import { useRouteTransition } from "@/app/route-transition";
 import { Notification } from "@/lib/animal-notification";
 
 const timezoneOptions = [
@@ -14,6 +15,7 @@ const timezoneOptions = [
 export function SetupForm() {
   const [busy, setBusy] = useState(false);
   const [values, setValues] = useState({ familyName: "", nickname: "", timezone: "Asia/Hong_Kong", pin: "", bootstrapSecret: "" });
+  const navigate = useRouteTransition();
 
   async function submit() {
     if (busy) return;
@@ -23,7 +25,7 @@ export function SetupForm() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error?.message ?? "初始化失败");
       Notification.success({ message: "家庭成长站已经准备好", description: "正在进入家长后台。" });
-      window.location.href = "/admin";
+      navigate("/admin");
     } catch (error) {
       Notification.error({ message: "初始化没有完成", description: error instanceof Error ? error.message : "请检查填写内容。" });
     } finally {
