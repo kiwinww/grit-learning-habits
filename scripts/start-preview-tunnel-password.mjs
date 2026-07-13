@@ -33,8 +33,19 @@ try {
     stream.stderr.on("data", (data) => process.stderr.write(data));
     stream.end(`set -euo pipefail
 install -m 0755 '${remoteBinary}' /usr/local/bin/cloudflared
-pm2 delete family-star-coin-preview-tunnel >/dev/null 2>&1 || true
-pm2 start /usr/local/bin/cloudflared --name family-star-coin-preview-tunnel -- tunnel --url http://127.0.0.1:3002 --no-autoupdate
+cd /var/www/family-star-coin-preview/current
+pm2 delete family-star-coin-preview >/dev/null 2>&1 || true
+APP_NAME=family-star-coin-preview PORT=3002 DATABASE_URL=file:./family-star-coin.db pm2 start ecosystem.config.cjs --update-env
+for i in $(seq 1 30); do
+  APP_CODE=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3002/ || true)
+  [ "$APP_CODE" = "200" ] && break
+  sleep 1
+done
+[ "$APP_CODE" = "200" ] || { pm2 logs family-star-coin-preview --lines 100 --nostream; exit 1; }
+if ! pm2 describe family-star-coin-preview-tunnel 2>/dev/null | grep -q 'online'; then
+  pm2 delete family-star-coin-preview-tunnel >/dev/null 2>&1 || true
+  pm2 start /usr/local/bin/cloudflared --name family-star-coin-preview-tunnel -- tunnel --url http://127.0.0.1:3002 --no-autoupdate
+fi
 pm2 save
 TUNNEL_URL=""
 for i in $(seq 1 30); do
@@ -43,7 +54,14 @@ for i in $(seq 1 30); do
   sleep 1
 done
 [ -n "$TUNNEL_URL" ] || { pm2 logs family-star-coin-preview-tunnel --lines 100 --nostream; exit 1; }
-curl --fail --silent --show-error --location "$TUNNEL_URL/" >/dev/null
+echo "TUNNEL_CANDIDATE=$TUNNEL_URL/"
+HTTP_CODE=""
+for i in $(seq 1 30); do
+  HTTP_CODE=$(curl --silent --output /dev/null --write-out '%{http_code}' --location "$TUNNEL_URL/" || true)
+  [ "$HTTP_CODE" = "200" ] && break
+  sleep 2
+done
+[ "$HTTP_CODE" = "200" ] || { echo "Tunnel returned HTTP $HTTP_CODE" >&2; pm2 logs family-star-coin-preview-tunnel --lines 100 --nostream; exit 1; }
 echo "PREVIEW_URL=$TUNNEL_URL/"
 echo "PARENT_PIN=2468"
 `);

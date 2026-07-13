@@ -144,7 +144,8 @@ npm audit --omit=dev
 ln -sfn "$RELEASE" "$CURRENT"
 cd "$CURRENT"
 if ! command -v pm2 >/dev/null 2>&1; then npm install -g pm2; fi
-APP_NAME="$APP_NAME" PORT="$APP_PORT" DATABASE_URL="file:./family-star-coin.db" pm2 startOrRestart ecosystem.config.cjs --update-env
+pm2 delete "$APP_NAME" >/dev/null 2>&1 || true
+APP_NAME="$APP_NAME" PORT="$APP_PORT" DATABASE_URL="file:./family-star-coin.db" pm2 start ecosystem.config.cjs --update-env
 pm2 save
 for i in $(seq 1 30); do
   code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$APP_PORT/" || true)
@@ -184,8 +185,10 @@ else
     curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$CF_ARCH" -o /usr/local/bin/cloudflared
     chmod 0755 /usr/local/bin/cloudflared
   fi
-  pm2 delete "$APP_NAME-tunnel" >/dev/null 2>&1 || true
-  pm2 start /usr/local/bin/cloudflared --name "$APP_NAME-tunnel" -- tunnel --url "http://127.0.0.1:$APP_PORT" --no-autoupdate
+  if ! pm2 describe "$APP_NAME-tunnel" 2>/dev/null | grep -q 'online'; then
+    pm2 delete "$APP_NAME-tunnel" >/dev/null 2>&1 || true
+    pm2 start /usr/local/bin/cloudflared --name "$APP_NAME-tunnel" -- tunnel --url "http://127.0.0.1:$APP_PORT" --no-autoupdate
+  fi
   pm2 save
   TUNNEL_URL=""
   for i in $(seq 1 30); do
@@ -194,7 +197,13 @@ else
     sleep 1
   done
   [ -n "$TUNNEL_URL" ] || { pm2 logs "$APP_NAME-tunnel" --lines 100 --nostream; exit 1; }
-  curl --fail --silent --show-error --location "$TUNNEL_URL/" >/dev/null
+  HTTP_CODE=""
+  for i in $(seq 1 30); do
+    HTTP_CODE=$(curl --silent --output /dev/null --write-out '%{http_code}' --location "$TUNNEL_URL/" || true)
+    [ "$HTTP_CODE" = "200" ] && break
+    sleep 2
+  done
+  [ "$HTTP_CODE" = "200" ] || { echo "Tunnel returned HTTP $HTTP_CODE" >&2; pm2 logs "$APP_NAME-tunnel" --lines 100 --nostream; exit 1; }
   PREVIEW_URL="$TUNNEL_URL/"
 fi
 echo "PREVIEW_URL=$PREVIEW_URL"

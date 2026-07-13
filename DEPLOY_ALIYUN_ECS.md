@@ -19,6 +19,8 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy-preview-password.ps1
 
 脚本会先执行类型检查、测试和生产构建，再弹出 SSH 凭据窗口。它会安装 Node.js、Nginx、Certbot 和 PM2（如服务器尚未安装），发布独立实例并签发 HTTPS 证书。
 
+如果临时域名受到服务器入口层拦截而无法签发证书，脚本会自动复用或创建 Cloudflare HTTPS Quick Tunnel；正式域名不会因此改变。
+
 若已有 SSH 私钥，可先配置 `root@47.99.236.88` 免密登录，再采用同样的服务器目录和端口手动发布。
 
 ## 正式阶段

@@ -23,3 +23,4 @@ output/playwright/
 .playwright-cli/
 .playwright-mcp/
 admin-*.png
+preview-*.png
