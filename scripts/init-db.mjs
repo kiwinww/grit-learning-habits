@@ -43,6 +43,8 @@ function quoteWindowsArg(value) {
 
 const needsSchema = !existsSync(dbPath) || statSync(dbPath).size === 0;
 
+run(prismaBin, ["generate"], { stdio: "inherit" });
+
 if (needsSchema) {
   const diff = run(prismaBin, [
     "migrate",

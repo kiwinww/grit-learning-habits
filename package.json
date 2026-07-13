@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "build:pages": "tsx scripts/build-pages.tsx",
+    "build:pages": "node --import ./scripts/register-static-loader.mjs --import tsx scripts/build-pages.tsx",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:init": "node scripts/init-db.mjs",
@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
+    "animal-island-ui": "1.2.0",
+    "classnames": "2.5.1",
     "dotenv": "17.2.3",
     "next": "16.2.10",
     "react": "19.2.7",

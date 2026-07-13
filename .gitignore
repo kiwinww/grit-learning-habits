@@ -11,3 +11,4 @@ prisma/dev.db-journal
 generated
 *.tsbuildinfo
 npm-debug.log*
+.codex-preview*.log

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Button, Card, Input, Switch, Tag, Title, Wallet } from "@/lib/animal-ui";
 import { imageAssets } from "@/lib/assets";
+import { SiteAttribution } from "@/app/site-attribution";
 import {
   commitStaticAdminState,
   loadStaticAdminState,
@@ -733,7 +735,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <span className="brand-mark" aria-hidden="true" />
           <span>森林星币站</span>
         </a>
-        <nav>
+        <nav aria-label="家长后台主导航">
           <a href="/">
             <img alt="" src={imageAssets.icons.parent} />
             孩子端
@@ -760,18 +762,18 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <p>当前是单家庭免登录版本，适合家庭内部使用。孩子端负责简单操作，家长端负责配置和复盘。</p>
         </div>
         <div className="admin-stats">
-          <span>
-            <strong>{state.child.coinBalance}</strong>
+          <Card className="admin-stat-card" pattern="app-teal">
+            <Wallet size="medium" value={state.child.coinBalance} />
             星币余额
-          </span>
-          <span>
+          </Card>
+          <Card className="admin-stat-card" pattern="app-yellow">
             <strong>{pendingRedemptions.length}</strong>
             待兑现奖励
-          </span>
-          <span>
+          </Card>
+          <Card className="admin-stat-card" pattern="app-green">
             <strong>{state.tasks.filter((task) => task.enabled).length}</strong>
             启用任务
-          </span>
+          </Card>
         </div>
       </section>
 
@@ -782,7 +784,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
         <form className="coin-adjust-form" onSubmit={adjustCoins}>
           <label>
             <span>设置星币余额</span>
-            <input
+            <Input
               min="0"
               step="1"
               type="number"
@@ -792,23 +794,25 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           </label>
           <label>
             <span>调整原因</span>
-            <input
+            <Input
               value={coinAdjustReason}
               onChange={(event) => setCoinAdjustReason(event.target.value)}
             />
           </label>
-          <button className="admin-button secondary" disabled={busy} type="submit">
+          <Button className="admin-button" disabled={busy} htmlType="submit" type="default">
             保存星币
-          </button>
+          </Button>
         </form>
-        <button
-          className="admin-button danger"
+        <Button
+          className="admin-button"
+          danger
           disabled={busy}
+          htmlType="button"
           onClick={resetDemoRecords}
-          type="button"
+          type="default"
         >
           重置演示记录
-        </button>
+        </Button>
       </div>
 
       <section className="admin-single" id="weekly-review">
@@ -816,41 +820,43 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <div className="panel-title">
             <div>
               <p className="eyebrow">周复盘</p>
-              <h2>本周习惯观察</h2>
+              <Title className="panel-ribbon-title" color="app-teal" size="large">
+                本周习惯观察
+              </Title>
             </div>
             <div className="week-switcher">
-              <button className="admin-button secondary" onClick={() => shiftWeek(-1)} type="button">
+              <Button className="admin-button" htmlType="button" onClick={() => shiftWeek(-1)} size="small" type="default">
                 上周
-              </button>
+              </Button>
               <span>{weeklyReview ? `${weeklyReview.weekStart} - ${weeklyReview.weekEnd}` : "加载中"}</span>
-              <button className="admin-button secondary" onClick={() => shiftWeek(1)} type="button">
+              <Button className="admin-button" htmlType="button" onClick={() => shiftWeek(1)} size="small" type="default">
                 下周
-              </button>
+              </Button>
             </div>
           </div>
           {weeklyReview ? (
             <>
               <div className="weekly-admin-metrics">
-                <span>
+                <Card className="weekly-admin-metric-card" pattern="app-teal">
                   <img alt="" src={imageAssets.icons.calendar} />
                   <strong>{weeklyReview.completedDays}</strong>
                   完成天数
-                </span>
-                <span>
+                </Card>
+                <Card className="weekly-admin-metric-card" pattern="app-green">
                   <img alt="" src={imageAssets.icons.learning} />
                   <strong>{weeklyReview.taskCompletions}</strong>
                   完成任务
-                </span>
-                <span>
+                </Card>
+                <Card className="weekly-admin-metric-card" pattern="app-yellow">
                   <img alt="" src={imageAssets.coin} />
                   <strong>{weeklyReview.coinsEarned}</strong>
                   获得星币
-                </span>
-                <span>
+                </Card>
+                <Card className="weekly-admin-metric-card" pattern="app-orange">
                   <img alt="" src={imageAssets.icons.redemption} />
                   <strong>{weeklyReview.pendingRewards}</strong>
                   待兑现
-                </span>
+                </Card>
               </div>
               <div className="weekly-admin-layout">
                 <div className="weekly-trend">
@@ -917,9 +923,9 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                       placeholder="例如：先把订正错题拆成 10 分钟小任务。"
                     />
                   </label>
-                  <button className="admin-button" disabled={busy} onClick={saveWeeklyReviewNotes} type="button">
+                  <Button className="admin-button" disabled={busy} htmlType="button" onClick={saveWeeklyReviewNotes} type="primary">
                     保存周复盘
-                  </button>
+                  </Button>
                 </div>
               </div>
             </>
@@ -937,11 +943,13 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <div className="panel-title">
             <div>
               <p className="eyebrow">今日日程</p>
-              <h2>今日安排与常用模板</h2>
+              <Title className="panel-ribbon-title" color="app-yellow" size="large">
+                今日安排与常用模板
+              </Title>
             </div>
-            <button className="admin-button secondary" onClick={addScheduleBlock} type="button">
+            <Button className="admin-button" htmlType="button" onClick={addScheduleBlock} type="default">
               新增模板时间块
-            </button>
+            </Button>
           </div>
 
           <div className="today-schedule-preview" aria-label="今日实际日程预览">
@@ -951,7 +959,13 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                   {block.startTime}-{block.endTime}
                 </span>
                 <strong>{block.title}</strong>
-                <small>{scheduleTypeText(block.type)}</small>
+                <Tag
+                  color={block.type === "task" ? "app-yellow" : block.type === "free" ? "app-teal" : "app-green"}
+                  size="small"
+                  variant="outlined"
+                >
+                  {scheduleTypeText(block.type)}
+                </Tag>
               </div>
             ))}
           </div>
@@ -966,7 +980,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                 <>
                   <label className="field-line">
                     <span>模板名称</span>
-                    <input
+                    <Input
                       value={template.name}
                       onChange={(event) =>
                         setState((current) => ({
@@ -981,19 +995,19 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                   <div className="schedule-editor">
                     {template.blocks.map((block) => (
                       <div className={block.enabled ? "editor-row" : "editor-row is-disabled"} key={block.id}>
-                        <input
+                        <Input
                           aria-label="开始时间"
                           type="time"
                           value={block.startTime}
                           onChange={(event) => updateBlock(block.id, { startTime: event.target.value })}
                         />
-                        <input
+                        <Input
                           aria-label="结束时间"
                           type="time"
                           value={block.endTime}
                           onChange={(event) => updateBlock(block.id, { endTime: event.target.value })}
                         />
-                        <input
+                        <Input
                           aria-label="标题"
                           value={block.title}
                           onChange={(event) => updateBlock(block.id, { title: event.target.value })}
@@ -1024,23 +1038,25 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                           ))}
                         </select>
                         <label className="switch-line">
-                          <input
+                          <Switch
+                            aria-label="启用日程时间块"
                             checked={block.enabled}
-                            type="checkbox"
-                            onChange={(event) =>
-                              updateBlock(block.id, { enabled: event.target.checked })
-                            }
+                            onChange={(checked) => updateBlock(block.id, { enabled: checked })}
+                            size="small"
                           />
                           启用
                         </label>
-                        <button
-                          className="admin-button danger"
+                        <Button
+                          className="admin-button"
+                          danger
                           disabled={busy || !block.enabled}
+                          htmlType="button"
                           onClick={() => removeScheduleBlock(block.id)}
-                          type="button"
+                          size="small"
+                          type="default"
                         >
                           {block.enabled ? "删除" : "已删除"}
-                        </button>
+                        </Button>
                         <textarea
                           aria-label="说明"
                           value={block.description}
@@ -1051,14 +1067,15 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                       </div>
                     ))}
                   </div>
-                  <button
+                  <Button
                     className="admin-button"
                     disabled={busy}
+                    htmlType="button"
                     onClick={saveScheduleTemplate}
-                    type="button"
+                    type="primary"
                   >
                     保存常用模板
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <p>还没有日程模板。</p>
@@ -1073,20 +1090,20 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
               <form action={addDailyScheduleItem} className="stack-form">
                 <label>
                   <span>标题</span>
-                  <input name="title" placeholder="例如 英语朗读" required />
+                  <Input name="title" placeholder="例如 英语朗读" required />
                 </label>
                 <label>
                   <span>说明</span>
-                  <input name="description" placeholder="例如 读 10 分钟课文" required />
+                  <Input name="description" placeholder="例如 读 10 分钟课文" required />
                 </label>
                 <div className="two-cols">
                   <label>
                     <span>开始</span>
-                    <input name="startTime" type="time" defaultValue="18:20" required />
+                    <Input name="startTime" type="time" defaultValue="18:20" required />
                   </label>
                   <label>
                     <span>结束</span>
-                    <input name="endTime" type="time" defaultValue="18:35" required />
+                    <Input name="endTime" type="time" defaultValue="18:35" required />
                   </label>
                 </div>
                 <label>
@@ -1108,9 +1125,9 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                     ))}
                   </select>
                 </label>
-                <button className="admin-button" disabled={busy} type="submit">
+                <Button className="admin-button" disabled={busy} htmlType="submit" type="primary">
                   添加到今日日程
-                </button>
+                </Button>
               </form>
             </div>
           </div>
@@ -1122,50 +1139,54 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <div className="panel-title">
             <div>
               <p className="eyebrow">任务管理</p>
-              <h2>星币规则</h2>
+              <Title className="panel-ribbon-title" color="app-green" size="large">
+                星币规则
+              </Title>
             </div>
           </div>
           <form action={addTask} className="inline-add">
-            <input name="title" placeholder="任务名称" required />
-            <input name="description" placeholder="孩子能看懂的说明" required />
-            <input min="0" name="points" placeholder="星币" required type="number" />
-            <button className="admin-button" disabled={busy} type="submit">
+            <Input name="title" placeholder="任务名称" required />
+            <Input name="description" placeholder="孩子能看懂的说明" required />
+            <Input min="0" name="points" placeholder="星币" required type="number" />
+            <Button className="admin-button" disabled={busy} htmlType="submit" type="primary">
               新增
-            </button>
+            </Button>
           </form>
           <div className="editable-list">
             {state.tasks.map((task) => (
               <div className="editable-item" key={task.id}>
-                <input
+                <Input
                   value={task.title}
                   onChange={(event) => updateTask(task.id, { title: event.target.value })}
                 />
-                <input
+                <Input
                   value={task.description}
                   onChange={(event) => updateTask(task.id, { description: event.target.value })}
                 />
-                <input
+                <Input
                   min="0"
                   type="number"
                   value={task.points}
                   onChange={(event) => updateTask(task.id, { points: Number(event.target.value) })}
                 />
                 <label className="switch-line">
-                  <input
+                  <Switch
+                    aria-label={`启用任务 ${task.title}`}
                     checked={task.enabled}
-                    type="checkbox"
-                    onChange={(event) => updateTask(task.id, { enabled: event.target.checked })}
+                    onChange={(checked) => updateTask(task.id, { enabled: checked })}
+                    size="small"
                   />
                   启用
                 </label>
-                <button
-                  className="admin-button secondary"
+                <Button
+                  className="admin-button"
                   disabled={busy}
+                  htmlType="button"
                   onClick={() => saveTask(task)}
-                  type="button"
+                  type="default"
                 >
                   保存
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -1175,34 +1196,36 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <div className="panel-title">
             <div>
               <p className="eyebrow">奖励管理</p>
-              <h2>兑换清单</h2>
+              <Title className="panel-ribbon-title" color="app-orange" size="large">
+                兑换清单
+              </Title>
             </div>
           </div>
           <form action={addReward} className="reward-create-card">
             <label>
               <span>奖励名称</span>
-              <input name="title" placeholder="例如 周末自然探索" required />
+              <Input name="title" placeholder="例如 周末自然探索" required />
             </label>
             <label>
               <span>奖励说明</span>
-              <input name="description" placeholder="孩子能看懂的兑换说明" required />
+              <Input name="description" placeholder="孩子能看懂的兑换说明" required />
             </label>
             <label>
               <span>星币</span>
-              <input min="0" name="cost" required type="number" />
+              <Input min="0" name="cost" required type="number" />
             </label>
             <label>
               <span>分类</span>
-              <input name="tier" placeholder="例如 亲子陪伴" />
+              <Input name="tier" placeholder="例如 亲子陪伴" />
             </label>
             <label className="image-upload-field">
               <span>奖励图片</span>
               <input accept="image/png,image/jpeg,image/webp" name="image" type="file" />
               <small>PNG / JPG / WebP，2MB 以内</small>
             </label>
-            <button className="admin-button" disabled={busy} type="submit">
+            <Button className="admin-button" disabled={busy} htmlType="submit" type="primary">
               新增奖励
-            </button>
+            </Button>
           </form>
           <div className="reward-admin-grid">
             {state.rewards.map((reward) => (
@@ -1219,7 +1242,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                 </div>
                 <label>
                   <span>名称</span>
-                  <input
+                  <Input
                     value={reward.title}
                     onChange={(event) => updateReward(reward.id, { title: event.target.value })}
                   />
@@ -1236,7 +1259,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                 <div className="reward-admin-row">
                   <label>
                     <span>星币</span>
-                    <input
+                    <Input
                       min="0"
                       type="number"
                       value={reward.cost}
@@ -1247,7 +1270,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                   </label>
                   <label>
                     <span>分类</span>
-                    <input
+                    <Input
                       value={reward.tier}
                       onChange={(event) => updateReward(reward.id, { tier: event.target.value })}
                     />
@@ -1270,24 +1293,24 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                     </small>
                   </label>
                   <label className="switch-line reward-switch">
-                    <input
+                    <Switch
+                      aria-label={`启用奖励 ${reward.title}`}
                       checked={reward.enabled}
-                      type="checkbox"
-                      onChange={(event) =>
-                        updateReward(reward.id, { enabled: event.target.checked })
-                      }
+                      onChange={(checked) => updateReward(reward.id, { enabled: checked })}
+                      size="small"
                     />
                     启用
                   </label>
                 </div>
-                <button
-                  className="admin-button secondary"
+                <Button
+                  className="admin-button"
                   disabled={busy}
+                  htmlType="button"
                   onClick={() => saveReward(reward)}
-                  type="button"
+                  type="default"
                 >
                   保存奖励
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -1299,7 +1322,9 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <div className="panel-title">
             <div>
               <p className="eyebrow">兑换处理</p>
-              <h2>待兑现奖励</h2>
+              <Title className="panel-ribbon-title" color="app-yellow" size="large">
+                待兑现奖励
+              </Title>
             </div>
           </div>
           <div className="record-table">
@@ -1315,22 +1340,26 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
                 </div>
                 {redemption.status === "requested" ? (
                   <div className="row-actions">
-                    <button
+                    <Button
                       className="admin-button"
                       disabled={busy}
+                      htmlType="button"
                       onClick={() => updateRedemption(redemption.id, "deliver")}
-                      type="button"
+                      size="small"
+                      type="primary"
                     >
                       已兑现
-                    </button>
-                    <button
-                      className="admin-button secondary"
+                    </Button>
+                    <Button
+                      className="admin-button"
                       disabled={busy}
+                      htmlType="button"
                       onClick={() => updateRedemption(redemption.id, "cancel")}
-                      type="button"
+                      size="small"
+                      type="default"
                     >
                       取消退币
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
               </div>
@@ -1342,7 +1371,9 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           <div className="panel-title">
             <div>
               <p className="eyebrow">记录中心</p>
-              <h2>星币流水</h2>
+              <Title className="panel-ribbon-title" color="app-teal" size="large">
+                星币流水
+              </Title>
             </div>
           </div>
           <div className="record-table">
@@ -1360,6 +1391,7 @@ export function AdminApp({ initialState, initialWeeklyReview = null, staticMode 
           </div>
         </article>
       </section>
+      <SiteAttribution />
     </main>
   );
 }

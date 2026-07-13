@@ -1,88 +1,67 @@
-# 阿里云 ECS 发布说明
+# 阿里云 ECS 正式发布说明
 
-推荐第一版使用阿里云 ECS 发布，因为当前系统需要本地 SQLite 数据库和奖励图片上传目录。
+正式版使用 Next.js + Prisma + SQLite，通过独立备案子域名访问。应用只监听 `127.0.0.1:3001`，由 Nginx 提供公网 HTTP/HTTPS，不影响同一台 ECS 上的其他站点。
 
-## 服务器要求
+## 服务器准备
 
 - Ubuntu 22.04/24.04 或 Alibaba Cloud Linux。
-- 已开放安全组入方向 TCP `3001`，或配置 Nginx 反向代理到 `3001`。
-- Node.js 20 LTS 或更高版本。
-- Git。
+- Node.js 22、Nginx、Certbot、Git、tar、curl；推荐安装 `sqlite3` 以获得一致性备份。
+- 安全组只需开放 22、80、443，不开放 3001。
+- `study.<备案主域名>` 的 A 记录已指向 ECS 公网 IP。
+- SSH 用户能够执行 `sudo nginx`、`sudo systemctl`、`sudo certbot` 和写入 `/var/www`。
 
-## 首次部署
+Ubuntu 安装示例：
 
 ```bash
-sudo mkdir -p /www
-sudo chown -R $USER:$USER /www
-cd /www
-git clone https://github.com/kiwinww/grit-learning-habits.git
-cd grit-learning-habits
-
-cp .env.example .env
-npm ci
-npm run db:init
-npm run build
-
-npm install -g pm2
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup
+sudo apt-get update
+sudo apt-get install -y nginx certbot python3-certbot-nginx sqlite3 git curl
 ```
 
-也可以在本机 Windows PowerShell 里直接发布当前 Git 提交：
+## 从 Windows 发布
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/deploy-aliyun-ecs.ps1 -HostName 服务器公网IP -User root -KeyPath C:\path\to\key.pem -Port 3001
+cd D:\GRIT
+
+powershell -ExecutionPolicy Bypass -File deploy-online.ps1 `
+  -HostName 47.99.236.88 `
+  -User root `
+  -Domain study.example.com `
+  -LetsEncryptEmail admin@example.com `
+  -KeyPath C:\path\to\aliyun.pem
 ```
 
-访问：
+不使用密钥文件、已经配置 SSH Agent 时，可以省略 `-KeyPath`。
+
+## 服务器目录
 
 ```text
-http://服务器公网IP:3001/
-http://服务器公网IP:3001/admin
+/var/www/grit-learning-habits/
+├── current -> releases/<timestamp>
+├── releases/                 # 每次发布的只读代码版本
+├── shared/
+│   ├── .env
+│   ├── prisma/dev.db
+│   └── public/uploads/
+└── backups/
+    ├── releases/             # 发布前备份
+    └── daily/                # 每日 03:17 备份，保留 14 天
 ```
 
-## 更新部署
+## 发布流程
+
+1. 本地执行类型检查和生产构建。
+2. 上传不含 `.env`、数据库和上传文件的代码包。
+3. 在新版本目录安装依赖、生成 Prisma Client、初始化数据库、再次检查并构建。
+4. 停止旧 PM2 进程，备份共享数据，切换 `current` 软链接并启动新版本。
+5. 本机健康检查失败时切回上一个版本。
+6. 写入独立 Nginx 配置、申请 Let's Encrypt 证书并验证正式 HTTPS 地址。
+
+## 手动备份
 
 ```bash
-cd /www/grit-learning-habits
-git pull
-npm ci
-npm run db:init
-npm run build
-pm2 restart grit-learning-habits
+sudo /usr/local/bin/grit-learning-habits-backup /var/www/grit-learning-habits 14
 ```
 
-> 如果 GitHub 仓库是私有仓库，ECS 需要先配置 GitHub SSH deploy key、GitHub CLI 登录，或改用本地打包后 `scp` 上传。
+## 访问保护说明
 
-## 可选：Nginx 反向代理
-
-```nginx
-server {
-  listen 80;
-  server_name 你的域名或公网IP;
-
-  location / {
-    proxy_pass http://127.0.0.1:3000;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-  }
-}
-```
-
-改完后执行：
-
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-## 需要 Codex 继续代发布时请提供
-
-- ECS 公网 IP。
-- SSH 用户名，例如 `root` 或 `ecs-user`。
-- SSH 密钥文件路径，或已配置好的 `ssh user@ip` 免密连接。
-- 希望使用 `:3000` 直接访问，还是绑定域名/Nginx。
+当前版本按项目约定不提供登录保护。Nginx 和页面会发送 `noindex` 指令，但任何获得网址的人仍能访问孩子端、家长后台及写接口。

@@ -49,6 +49,7 @@ function renderDocument(title: string, appMarkup: string, snapshot: StaticPagesS
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${title}</title>
+    <link rel="stylesheet" href="${withBasePath("/animal-island-ui.css")}" />
     <link rel="stylesheet" href="${withBasePath("/styles.css")}" />
   </head>
   <body>
@@ -74,6 +75,11 @@ await rm(destination, { force: true, recursive: true });
 await mkdir(join(destination, "admin"), { recursive: true });
 await cp(join(root, "public", "assets"), join(destination, "assets"), { recursive: true });
 await copyIfExists(join(root, "public", "uploads"), join(destination, "uploads"));
+await cp(
+  join(root, "node_modules", "animal-island-ui", "dist", "files"),
+  join(destination, "files"),
+  { recursive: true }
+);
 
 const [appState, adminState, weeklyReview, css] = await Promise.all([
   getAppState(),
@@ -90,7 +96,17 @@ await build({
   outfile: join(destination, "pages-client.js"),
   platform: "browser",
   sourcemap: false,
-  tsconfig: join(root, "tsconfig.json")
+  tsconfig: join(root, "tsconfig.json"),
+  assetNames: "files/[name]-[hash]",
+  loader: {
+    ".avif": "file",
+    ".gif": "file",
+    ".jpeg": "file",
+    ".jpg": "file",
+    ".png": "file",
+    ".svg": "file",
+    ".webp": "file"
+  }
 });
 
 const baseSnapshot = {
@@ -104,6 +120,10 @@ const adminMarkup = renderToString(
 );
 
 await writeFile(join(destination, "styles.css"), rewriteCssPaths(css));
+await cp(
+  join(root, "node_modules", "animal-island-ui", "dist", "index.css"),
+  join(destination, "animal-island-ui.css")
+);
 await writeFile(
   join(destination, "index.html"),
   renderDocument("森林星币站", homeMarkup, {

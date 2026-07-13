@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Button, Card, Progress, Tag, Title, Wallet } from "@/lib/animal-ui";
 import { imageAssets } from "@/lib/assets";
+import { SiteAttribution } from "@/app/site-attribution";
 import {
   cancelStaticTask,
   completeStaticTask,
@@ -70,18 +72,28 @@ function StickyScheduleCard({
         <span>{block.startTime}</span>
         <span>{block.endTime}</span>
       </div>
-      <span className="sticky-type">{typeLabel(block.type)}</span>
+      <Tag
+        className="sticky-type"
+        color={block.type === "task" ? "app-yellow" : block.type === "free" ? "app-teal" : "app-green"}
+        size="small"
+        variant="outlined"
+      >
+        {typeLabel(block.type)}
+      </Tag>
       <h3>{block.title}</h3>
       <p>{block.description}</p>
       {block.taskId ? (
-        <button
+        <Button
           className={block.completedToday ? "complete-button done" : "complete-button"}
           disabled={busy}
+          htmlType="button"
+          loading={busy}
           onClick={() => onToggleTask(block.taskId as number, block.title, block.completedToday)}
-          type="button"
+          size="middle"
+          type={block.completedToday ? "default" : "primary"}
         >
           {block.completedToday ? "取消完成" : `完成得 ${block.points ?? 0} 星币`}
-        </button>
+        </Button>
       ) : (
         <span className="quiet-pill">{block.type === "free" ? "好好享受" : "照着做就好"}</span>
       )}
@@ -110,19 +122,24 @@ function RewardCard({
       </div>
       <div className="reward-copy">
         <div className="reward-meta">
-          <span>{reward.tier}</span>
+          <Tag color="app-orange" size="small" variant="outlined">
+            {reward.tier}
+          </Tag>
           <strong>{reward.cost} 星币</strong>
         </div>
         <h3>{reward.title}</h3>
         <p>{reward.description}</p>
-        <button
+        <Button
           className={reward.canRedeem ? "redeem-button" : "redeem-button locked"}
           disabled={busy || !reward.enabled}
+          htmlType="button"
+          loading={busy}
           onClick={() => onRedeem(reward)}
-          type="button"
+          size="large"
+          type={reward.canRedeem ? "primary" : "default"}
         >
           {reward.canRedeem ? "兑换奖励" : "继续攒星币"}
-        </button>
+        </Button>
       </div>
     </article>
   );
@@ -143,29 +160,31 @@ function WeeklyAchievement({
         <div className="section-heading">
           <div>
             <p className="eyebrow">本周小成就</p>
-            <h2>小树正在长高</h2>
+            <Title className="section-title" color="app-teal" size="large">
+              小树正在长高
+            </Title>
           </div>
-          <span className="coin-pill">
+          <Tag className="coin-pill" color="app-yellow" size="medium" variant="outlined">
             {summary.weekStart} - {summary.weekEnd}
-          </span>
+          </Tag>
         </div>
         <div className="weekly-metrics">
-          <span>
+          <Card className="weekly-metric-card" pattern="app-teal">
             <strong>{summary.completedDays}</strong>
             完成天数
-          </span>
-          <span>
+          </Card>
+          <Card className="weekly-metric-card" pattern="app-yellow">
             <strong>{summary.taskCompletions}</strong>
             完成任务
-          </span>
-          <span>
+          </Card>
+          <Card className="weekly-metric-card" pattern="app-orange">
             <strong>{summary.coinsEarned}</strong>
             获得星币
-          </span>
-          <span>
+          </Card>
+          <Card className="weekly-metric-card" pattern="app-green">
             <strong>{summary.pendingRewards}</strong>
             待兑现
-          </span>
+          </Card>
         </div>
         <div className="badge-grid">
           {badges.map((badge) => (
@@ -279,7 +298,7 @@ export function ChildApp({ initialState, staticMode = false }: Props) {
           <span className="brand-mark" aria-hidden="true" />
           <span>森林星币站</span>
         </a>
-        <nav>
+        <nav aria-label="孩子端主导航">
           <a href="#schedule">
             <img alt="" src={imageAssets.icons.schedule} />
             今日日程
@@ -308,28 +327,35 @@ export function ChildApp({ initialState, staticMode = false }: Props) {
             {notice.text}
           </div>
         </div>
-        <aside className="coin-panel">
-          <span className="panel-label">我的星币</span>
-          <strong>{state.child.coinBalance}</strong>
-          <span className="panel-label">当前目标</span>
-          <h2>{target?.title ?? "先设置一个奖励"}</h2>
-          <div className="progress-track">
-            <span style={{ width: `${targetProgress}%` }} />
-          </div>
-          <small>
-            {target
-              ? state.child.coinBalance >= target.cost
-                ? "已经可以兑换啦"
-                : `还差 ${target.cost - state.child.coinBalance} 枚星币`
-              : "家长可以在后台添加奖励"}
-          </small>
+        <aside className="coin-panel-shell">
+          <Card className="coin-panel" pattern="app-teal">
+            <span className="panel-label">我的星币</span>
+            <Wallet className="coin-wallet" size="large" value={state.child.coinBalance} />
+            <span className="panel-label">当前目标</span>
+            <h2>{target?.title ?? "先设置一个奖励"}</h2>
+            <Progress
+              className="target-progress"
+              percent={targetProgress}
+              showInfo={false}
+              size="small"
+            />
+            <small>
+              {target
+                ? state.child.coinBalance >= target.cost
+                  ? "已经可以兑换啦"
+                  : `还差 ${target.cost - state.child.coinBalance} 枚星币`
+                : "家长可以在后台添加奖励"}
+            </small>
+          </Card>
         </aside>
       </section>
 
       <section className="kid-section" id="schedule">
         <div className="section-heading centered">
           <p className="eyebrow">今日日程</p>
-          <h2>便利贴看板</h2>
+          <Title className="section-title" color="app-teal" size="large">
+            便利贴看板
+          </Title>
         </div>
         <div className="schedule-board">
           {state.schedule.map((block) => (
@@ -349,9 +375,13 @@ export function ChildApp({ initialState, staticMode = false }: Props) {
         <div className="section-heading">
           <div>
             <p className="eyebrow">兑换奖励</p>
-            <h2>星币商店</h2>
+            <Title className="section-title" color="app-yellow" size="large">
+              星币商店
+            </Title>
           </div>
-          <span className="coin-pill">{state.child.coinBalance} 枚星币</span>
+          <Tag className="coin-pill" color="app-yellow" size="medium" variant="outlined">
+            {state.child.coinBalance} 枚星币
+          </Tag>
         </div>
         <div className="reward-grid">
           {state.rewards
@@ -388,6 +418,7 @@ export function ChildApp({ initialState, staticMode = false }: Props) {
           ) : null}
         </div>
       </section>
+      <SiteAttribution />
     </main>
   );
 }
