@@ -43,7 +43,7 @@ export async function loginParent(pin: string) {
   });
 }
 
-export async function requireParent() {
+export async function requireParent({ touch = true }: { touch?: boolean } = {}) {
   const store = await cookies();
   const token = store.get(PARENT_COOKIE)?.value;
   if (!token) throw new AppError("PARENT_AUTH_REQUIRED", "请先输入家长 PIN。", 401);
@@ -53,10 +53,12 @@ export async function requireParent() {
     store.delete(PARENT_COOKIE);
     throw new AppError("SESSION_EXPIRED", "家长会话已过期，请重新登录。", 401);
   }
-  await prisma.parentSession.update({
-    where: { id: session.id },
-    data: { lastSeenAt: now, expiresAt: new Date(now.getTime() + SESSION_MINUTES * 60_000) }
-  });
+  if (touch) {
+    await prisma.parentSession.update({
+      where: { id: session.id },
+      data: { lastSeenAt: now, expiresAt: new Date(now.getTime() + SESSION_MINUTES * 60_000) }
+    });
+  }
   return session;
 }
 

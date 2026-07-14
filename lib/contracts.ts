@@ -1,7 +1,11 @@
+export type HeroMessage = { title: string; subtitle: string };
+
+export type RedemptionRecord = { id: number; title: string; cost: number; status: string; requestedAt: string };
+
 export type ChildState = {
   today: string;
   todayLabel: string;
-  family: { name: string; timezone: string; animationsEnabled: boolean; allowBackfill: boolean };
+  family: { name: string; timezone: string; animationsEnabled: boolean; allowBackfill: boolean; heroMessages: HeroMessage[] };
   child: { id: number; nickname: string; avatar: string };
   balance: number;
   targetRewardId: number | null;
@@ -15,6 +19,8 @@ export type ChildState = {
     reminder: boolean;
     points: number;
     status: string | null;
+    completionId: number | null;
+    canCancel: boolean;
   }>;
   rewards: Array<{
     id: number;
@@ -40,9 +46,13 @@ export type ChildState = {
   recent: {
     completions: Array<{ id: number; title: string; points: number; date: string; status: string }>;
     transactions: Array<{ id: number; amount: number; reason: string; createdAt: string }>;
-    redemptions: Array<{ id: number; title: string; cost: number; status: string; requestedAt: string }>;
+    redemptions: RedemptionRecord[];
   };
 };
+
+export type AdminAlertState =
+  | { authenticated: false }
+  | { authenticated: true; balance: number; pendingCount: number; redemptions: RedemptionRecord[] };
 
 export type AdminState = ChildState & {
   tasks: Array<{
@@ -55,7 +65,6 @@ export type AdminState = ChildState & {
     isCore: boolean;
     enabled: boolean;
     sortOrder: number;
-    habitStage: string;
   }>;
   schedules: Array<{
     id: number;
@@ -74,4 +83,9 @@ export type AdminState = ChildState & {
   pendingCompletions: Array<{ id: number; title: string; date: string; points: number }>;
   reviews: Array<{ weekStart: string; weekEnd: string; wins: string; difficulties: string; nextFocus: string }>;
   stabilityHints: Array<{ taskId: number; title: string; message: string }>;
+  resetOptions: {
+    tasks: Array<{ id: number; title: string; completionCount: number; ledgerAmount: number }>;
+    rewards: Array<{ id: number; title: string; redemptionCount: number; ledgerAmount: number }>;
+    total: { completionCount: number; redemptionCount: number; reviewCount: number };
+  };
 };

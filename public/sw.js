@@ -1,5 +1,5 @@
-const CACHE = "family-star-shell-v3";
-const SHELL = ["/offline", "/manifest.webmanifest", "/icon.svg", "/icon-maskable.svg", "/visuals/family-star-island.webp", "/visuals/game-cursor.png"];
+const CACHE = "family-star-shell-v5";
+const SHELL = ["/offline", "/manifest.webmanifest", "/icon.svg", "/icon-maskable.svg", "/visuals/animal-doc-pattern.svg", "/visuals/game-cursor.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).catch(() => undefined));

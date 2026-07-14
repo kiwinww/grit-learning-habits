@@ -7,6 +7,7 @@ const EXIT_DURATION = 160;
 let pendingNavigation: number | undefined;
 
 export function shouldReduceMotion(enabled = true) {
+  if (typeof document === "undefined" || typeof window === "undefined") return !enabled;
   return !enabled
     || document.documentElement.classList.contains("family-reduce-motion")
     || window.matchMedia("(prefers-reduced-motion: reduce)").matches;

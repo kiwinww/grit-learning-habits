@@ -19,6 +19,7 @@ model FamilySetting {
   animationsEnabled Boolean   @default(true)
   soundEnabled       Boolean   @default(false)
   allowBackfill      Boolean   @default(true)
+  heroMessagesJson   String?
   targetRewardId     Int?
   initializedAt      DateTime  @default(now())
   createdAt          DateTime  @default(now())
@@ -51,6 +52,7 @@ model Task {
   habitStage       String       @default("starter")
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
+  deletedAt        DateTime?
   schedules        Schedule[]
   completions      Completion[]
 }
@@ -132,7 +134,15 @@ model Reward {
   sortOrder                  Int          @default(0)
   createdAt                  DateTime     @default(now())
   updatedAt                  DateTime     @updatedAt
+  deletedAt                  DateTime?
   redemptions                Redemption[]
+}
+
+model AdminOperation {
+  id             Int      @id @default(autoincrement())
+  idempotencyKey String   @unique
+  action         String
+  createdAt      DateTime @default(now())
 }
 
 model Redemption {

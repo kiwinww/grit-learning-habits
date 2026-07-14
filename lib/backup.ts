@@ -4,7 +4,8 @@ import { backupChecksum } from "@/lib/security";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export const BACKUP_SCHEMA = "family-star-coin-backup/v1";
+export const BACKUP_SCHEMA = "family-star-coin-backup/v2";
+export const LEGACY_BACKUP_SCHEMA = "family-star-coin-backup/v1";
 
 export async function createBackup() {
   const [family, children, tasks, schedules, completions, transactions, rewards, redemptions, reviews] = await Promise.all([
@@ -42,10 +43,19 @@ export async function createBackup() {
 
 type BackupInput = Awaited<ReturnType<typeof createBackup>>;
 
+export async function saveServerBackup(prefix: string) {
+  const backup = await createBackup();
+  const backupDir = process.env.BACKUP_DIR ?? path.join(process.cwd(), "backups");
+  await mkdir(backupDir, { recursive: true });
+  const backupName = `${prefix}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+  await writeFile(path.join(backupDir, backupName), JSON.stringify(backup, null, 2), { encoding: "utf8", flag: "wx" });
+  return backupName;
+}
+
 export async function restoreBackup(input: unknown) {
   if (!input || typeof input !== "object") throw new AppError("INVALID_BACKUP", "备份文件格式不正确。", 400);
-  const backup = input as BackupInput;
-  if (backup.schemaVersion !== BACKUP_SCHEMA || !backup.data || backup.checksum !== backupChecksum(backup.data)) {
+  const backup = input as BackupInput & { schemaVersion: string };
+  if (![BACKUP_SCHEMA, LEGACY_BACKUP_SCHEMA].includes(backup.schemaVersion) || !backup.data || backup.checksum !== backupChecksum(backup.data)) {
     throw new AppError("INVALID_BACKUP", "备份版本或校验摘要不正确。", 400);
   }
   const current = await createBackup();

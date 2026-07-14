@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { AppError } from "@/lib/errors";
 import { businessDate, formatFamilyDate, longestStreak, sumLedger, weekBounds, weekdayForDateKey, addDays, utcForFamilyDate } from "@/lib/domain";
-import type { AdminState, ChildState } from "@/lib/contracts";
+import type { AdminAlertState, AdminState, ChildState } from "@/lib/contracts";
+import { parseHeroMessages } from "@/lib/hero-messages";
 
 export async function getChildState(): Promise<ChildState> {
   const family = await prisma.familySetting.findUnique({ where: { id: 1 } });
@@ -16,16 +17,22 @@ export async function getChildState(): Promise<ChildState> {
       prisma.schedule.findMany({
         where: {
           enabled: true,
-          OR: [
-            { scheduleType: "weekly", weekday },
-            { scheduleType: "date", specificDate: today }
+          AND: [
+            { OR: [
+              { scheduleType: "weekly", weekday },
+              { scheduleType: "date", specificDate: today }
+            ] },
+            { OR: [
+              { taskId: null },
+              { task: { is: { enabled: true, deletedAt: null } } }
+            ] }
           ]
         },
         include: { task: true },
         orderBy: [{ startTime: "asc" }, { sortOrder: "asc" }]
       }),
       prisma.completion.findMany({ where: { childId: child.id, businessDate: today } }),
-      prisma.reward.findMany({ orderBy: [{ sortOrder: "asc" }, { id: "asc" }] }),
+      prisma.reward.findMany({ where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] }),
       prisma.coinTransaction.findMany({ where: { childId: child.id }, orderBy: { createdAt: "desc" }, take: 30 }),
       prisma.completion.findMany({
         where: { childId: child.id, status: "approved", businessDate: { gte: week.start, lte: week.end } }
@@ -51,24 +58,29 @@ export async function getChildState(): Promise<ChildState> {
   const completedDays = new Set(weekCompletions.map((item) => item.businessDate)).size;
   const streak = longestStreak(allStreakCompletions.map((item) => item.businessDate));
   const deliveredCount = await prisma.redemption.count({ where: { childId: child.id, status: "fulfilled" } });
+  const visibleSchedules = schedules.filter((item, index, items) =>
+    !item.taskId || items.findIndex((candidate) => candidate.taskId === item.taskId) === index
+  );
 
   return {
     today,
     todayLabel: formatFamilyDate(today),
-    family: { name: family.familyName, timezone: family.timezone, animationsEnabled: family.animationsEnabled, allowBackfill: family.allowBackfill },
+    family: { name: family.familyName, timezone: family.timezone, animationsEnabled: family.animationsEnabled, allowBackfill: family.allowBackfill, heroMessages: parseHeroMessages(family.heroMessagesJson) },
     child: { id: child.id, nickname: child.nickname, avatar: child.avatar },
     balance,
     targetRewardId: family.targetRewardId,
-    schedule: schedules.map((item) => ({
+    schedule: visibleSchedules.map((item) => ({
       id: item.id,
       taskId: item.taskId,
-      title: item.title,
-      description: item.description,
+      title: item.task?.title ?? item.title,
+      description: item.task?.childDescription ?? item.description,
       startTime: item.startTime,
       endTime: item.endTime,
       reminder: item.reminder,
       points: item.task?.points ?? 0,
-      status: item.taskId ? completionByTask.get(item.taskId)?.status ?? null : null
+      status: item.taskId ? completionByTask.get(item.taskId)?.status ?? null : null,
+      completionId: item.taskId ? completionByTask.get(item.taskId)?.id ?? null : null,
+      canCancel: item.taskId ? completionByTask.get(item.taskId)?.status === "pending" : false
     })),
     rewards: rewards.map((reward) => ({
       id: reward.id,
@@ -106,11 +118,14 @@ export async function getChildState(): Promise<ChildState> {
 
 export async function getAdminState(): Promise<AdminState> {
   const childState = await getChildState();
-  const [tasks, schedules, pendingCompletions, reviews] = await Promise.all([
-    prisma.task.findMany({ orderBy: [{ sortOrder: "asc" }, { id: "asc" }] }),
+  const [tasks, schedules, pendingCompletions, reviews, allCompletions, allTransactions, allRedemptions] = await Promise.all([
+    prisma.task.findMany({ where: { deletedAt: null }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] }),
     prisma.schedule.findMany({ orderBy: [{ weekday: "asc" }, { startTime: "asc" }, { sortOrder: "asc" }] }),
     prisma.completion.findMany({ where: { status: "pending" }, orderBy: { completedAt: "desc" } }),
-    prisma.weeklyReview.findMany({ orderBy: { weekStart: "desc" }, take: 12 })
+    prisma.weeklyReview.findMany({ orderBy: { weekStart: "desc" }, take: 12 }),
+    prisma.completion.findMany({ select: { id: true, taskId: true } }),
+    prisma.coinTransaction.findMany({ select: { amount: true, completionId: true, sourceType: true, sourceId: true } }),
+    prisma.redemption.findMany({ select: { id: true, rewardId: true } })
   ]);
 
   const stabilityHints: AdminState["stabilityHints"] = [];
@@ -136,8 +151,7 @@ export async function getAdminState(): Promise<AdminState> {
       requiresApproval: task.requiresApproval,
       isCore: task.isCore,
       enabled: task.enabled,
-      sortOrder: task.sortOrder,
-      habitStage: task.habitStage
+      sortOrder: task.sortOrder
     })),
     schedules: schedules.map((item) => ({
       id: item.id,
@@ -155,6 +169,51 @@ export async function getAdminState(): Promise<AdminState> {
     })),
     pendingCompletions: pendingCompletions.map((item) => ({ id: item.id, title: item.taskTitleSnapshot, date: item.businessDate, points: item.pointsAwarded })),
     reviews: reviews.map((item) => ({ weekStart: item.weekStart, weekEnd: item.weekEnd, wins: item.wins, difficulties: item.difficulties, nextFocus: item.nextFocus })),
-    stabilityHints
+    stabilityHints,
+    resetOptions: {
+      tasks: tasks.map((task) => {
+        const ids = new Set(allCompletions.filter((item) => item.taskId === task.id).map((item) => item.id));
+        return {
+          id: task.id,
+          title: task.title,
+          completionCount: ids.size,
+          ledgerAmount: allTransactions.filter((item) => item.completionId && ids.has(item.completionId)).reduce((sum, item) => sum + item.amount, 0)
+        };
+      }),
+      rewards: childState.rewards.map((reward) => {
+        const ids = new Set(allRedemptions.filter((item) => item.rewardId === reward.id).map((item) => item.id));
+        return {
+          id: reward.id,
+          title: reward.title,
+          redemptionCount: ids.size,
+          ledgerAmount: allTransactions.filter((item) => item.sourceType === "redemption" && item.sourceId && ids.has(item.sourceId)).reduce((sum, item) => sum + item.amount, 0)
+        };
+      }),
+      total: { completionCount: allCompletions.length, redemptionCount: allRedemptions.length, reviewCount: reviews.length }
+    }
+  };
+}
+
+export async function getAdminAlertState(): Promise<Extract<AdminAlertState, { authenticated: true }>> {
+  const child = await prisma.child.findFirst({ where: { enabled: true }, orderBy: { id: "asc" } });
+  if (!child) throw new AppError("NOT_INITIALIZED", "请先完成家庭初始化。", 409);
+
+  const [ledger, pendingCount, redemptions] = await Promise.all([
+    prisma.coinTransaction.aggregate({ where: { childId: child.id }, _sum: { amount: true } }),
+    prisma.redemption.count({ where: { childId: child.id, status: "pending" } }),
+    prisma.redemption.findMany({ where: { childId: child.id }, orderBy: { requestedAt: "desc" }, take: 12 })
+  ]);
+
+  return {
+    authenticated: true,
+    balance: ledger._sum.amount ?? 0,
+    pendingCount,
+    redemptions: redemptions.map((item) => ({
+      id: item.id,
+      title: item.rewardTitleSnapshot,
+      cost: item.actualCost,
+      status: item.status,
+      requestedAt: item.requestedAt.toISOString()
+    }))
   };
 }

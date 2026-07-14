@@ -35,3 +35,11 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy-preview-password.ps1
 6. 启用每日 SQLite 在线备份并保留 14 天，随后关闭预览进程。
 
 正式切换不会复用预览数据，也不会覆盖旧站归档。
+
+在 Windows 上执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/deploy-production-password.ps1
+```
+
+脚本会在切换前归档旧站 Nginx、PM2 配置和已知站点目录，启动端口 `3003` 的正式实例并完成本机健康检查；只有公网 HTTPS 验证通过后才保留新上游。验证失败时会自动恢复原 Nginx 配置。发布成功后会输出一次性初始化地址与密钥，并配置每日 SQLite 在线备份（保留 14 天）。

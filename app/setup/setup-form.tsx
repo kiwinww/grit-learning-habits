@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button, Card, Form, Input, Select, Title } from "animal-island-ui";
+import { FullscreenLoading } from "@/app/fullscreen-loading";
 import { useRouteTransition } from "@/app/route-transition";
 import { Notification } from "@/lib/animal-notification";
 
@@ -14,21 +15,25 @@ const timezoneOptions = [
 
 export function SetupForm() {
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [readyToNavigate, setReadyToNavigate] = useState(false);
   const [values, setValues] = useState({ familyName: "", nickname: "", timezone: "Asia/Hong_Kong", pin: "", bootstrapSecret: "" });
   const navigate = useRouteTransition();
 
   async function submit() {
-    if (busy) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     try {
       const response = await fetch("/api/setup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(values) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error?.message ?? "初始化失败");
       Notification.success({ message: "家庭成长站已经准备好", description: "正在进入家长后台。" });
-      navigate("/admin");
+      setReadyToNavigate(true);
     } catch (error) {
       Notification.error({ message: "初始化没有完成", description: error instanceof Error ? error.message : "请检查填写内容。" });
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -60,9 +65,10 @@ export function SetupForm() {
             <span>一次性初始化密钥</span>
             <Input required size="large" type="password" value={values.bootstrapSecret} onChange={(event) => setValues({ ...values, bootstrapSecret: event.target.value })} />
           </label>
-          <Button block htmlType="submit" loading={busy} size="large" type="primary">开始使用</Button>
+          <Button block disabled={busy} htmlType="submit" size="large" type="primary">{busy ? "正在创建…" : "开始使用"}</Button>
         </Form>
       </Card>
+      <FullscreenLoading active={busy} label="正在建立家庭成长站…" onExited={() => { if (!readyToNavigate) return; setReadyToNavigate(false); navigate("/admin"); }} />
     </main>
   );
 }
