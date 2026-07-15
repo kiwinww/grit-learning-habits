@@ -1,25 +1,28 @@
 {
-  "name": "grit-learning-habits",
-  "version": "0.1.0",
+  "name": "family-star-coin-station",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "build:pages": "tsx scripts/build-pages.tsx",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "db:init": "node scripts/init-db.mjs",
-    "db:push": "node scripts/init-db.mjs",
+    "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
+    "animal-island-ui": "1.2.2",
+    "classnames": "2.5.1",
     "dotenv": "17.2.3",
     "next": "16.2.10",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "sharp": "0.34.4"
   },
   "devDependencies": {
     "@types/node": "25.0.1",
@@ -27,20 +30,25 @@
     "@types/react-dom": "19.2.3",
     "prisma": "6.19.3",
     "tsx": "4.21.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
   },
-  "description": "这是一个面向单家庭使用的儿童学习习惯培养系统，包含孩子端和家长后台。",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib"
-  },
+  "description": "家庭内部使用的儿童学习习惯与星币奖励系统",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kiwinww/grit-learning-habits.git"
   },
+  "license": "UNLICENSED",
+  "overrides": {
+    "postcss": "8.5.18"
+  },
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "tests"
+  },
   "keywords": [],
   "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/kiwinww/grit-learning-habits/issues"
   },

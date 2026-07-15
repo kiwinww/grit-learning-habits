@@ -1,10 +1,8 @@
-import { AdminApp } from "@/app/admin/admin-app";
-import { getAdminState } from "@/lib/app-state";
+import type { Metadata } from "next";
+import { AdminPortal } from "@/app/admin/admin-portal";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "家长后台" };
 
-export default async function AdminPage() {
-  const state = await getAdminState();
-
-  return <AdminApp initialState={state} />;
+export default function AdminPage() {
+  return <AdminPortal />;
 }

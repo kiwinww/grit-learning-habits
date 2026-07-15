@@ -1,259 +1,55 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { hashPin } from "../lib/security";
+import { addDays, businessDate, weekBounds } from "../lib/domain";
 
 const prisma = new PrismaClient();
 
-const tasks = [
-  {
-    slug: "start-on-time",
-    title: "准时开始",
-    description: "到点独立坐到书桌前",
-    points: 3,
-    sortOrder: 1
-  },
-  {
-    slug: "math-two-pages",
-    title: "数学两页",
-    description: "完成后自己检查一遍",
-    points: 5,
-    sortOrder: 2
-  },
-  {
-    slug: "think-first",
-    title: "难题思考",
-    description: "先思考 3 分钟再求助",
-    points: 5,
-    sortOrder: 3
-  },
-  {
-    slug: "fix-mistakes",
-    title: "订正错题",
-    description: "说清楚错在哪里",
-    points: 3,
-    sortOrder: 4
-  },
-  {
-    slug: "pack-bag",
-    title: "整理书包",
-    description: "把明天用品放好",
-    points: 2,
-    sortOrder: 5
-  }
-];
-
-const rewards = [
-  {
-    slug: "cartoon-ten-minutes",
-    title: "多看 10 分钟动画",
-    description: "完成基础任务后，开心放松一下。",
-    cost: 8,
-    tier: "即时小满足",
-    category: "screen",
-    sortOrder: 1
-  },
-  {
-    slug: "dinner-choice",
-    title: "今晚点菜权",
-    description: "晚饭选一道自己喜欢的菜。",
-    cost: 12,
-    tier: "家庭选择权",
-    category: "food",
-    sortOrder: 2
-  },
-  {
-    slug: "bedtime-story",
-    title: "睡前多讲一个故事",
-    description: "把今天的努力换成亲子时间。",
-    cost: 18,
-    tier: "亲子陪伴",
-    category: "book",
-    sortOrder: 3
-  },
-  {
-    slug: "weekend-nature-trip",
-    title: "周末自然探索",
-    description: "攒够星币，去公园完成一次小探险。",
-    cost: 60,
-    tier: "延迟大满足",
-    category: "outing",
-    sortOrder: 4
-  }
-];
-
 async function main() {
-  let child = await prisma.child.findUnique({ where: { slug: "default-child" } });
-
-  if (!child) {
-    child = await prisma.child.create({
-      data: {
-        slug: "default-child",
-        name: "小树",
-        avatar: "leaf",
-        coinBalance: 0
-      }
-    });
-  } else {
-    child = await prisma.child.update({
-      where: { id: child.id },
-      data: {
-        name: "小树",
-        avatar: "leaf"
-      }
-    });
+  if (process.env.DEMO_SEED !== "1") {
+    console.log("DEMO_SEED is not 1; leaving the fresh database empty.");
+    return;
   }
-
-  const ledgerCount = await prisma.coinLedger.count({ where: { childId: child.id } });
-  if (ledgerCount === 0) {
-    await prisma.coinLedger.create({
-      data: {
-        childId: child.id,
-        amount: 0,
-        reason: "初始星币",
-        sourceType: "seed"
-      }
-    });
-    await prisma.child.update({
-      where: { id: child.id },
-      data: { coinBalance: 0 }
-    });
+  if (await prisma.familySetting.findUnique({ where: { id: 1 } })) {
+    console.log("Demo family already exists; skipping seed.");
+    return;
   }
+  const pin = await hashPin(process.env.DEMO_PARENT_PIN ?? "2468");
+  const today = businessDate();
+  const week = weekBounds(today);
 
-  const taskRecords = [];
-  for (const task of tasks) {
-    taskRecords.push(
-      await prisma.taskTemplate.upsert({
-        where: { slug: task.slug },
-        update: {
-          title: task.title,
-          description: task.description,
-          points: task.points,
-          sortOrder: task.sortOrder,
-          enabled: true
-        },
-        create: {
-          ...task,
-          enabled: true
-        }
-      })
-    );
-  }
-
-  for (const reward of rewards) {
-    await prisma.reward.upsert({
-      where: { slug: reward.slug },
-      update: {
-        title: reward.title,
-        description: reward.description,
-        cost: reward.cost,
-        tier: reward.tier,
-        category: reward.category,
-        sortOrder: reward.sortOrder,
-        enabled: true
-      },
-      create: {
-        ...reward,
-        enabled: true
-      }
-    });
-  }
-
-  const template = await prisma.scheduleTemplate.upsert({
-    where: { slug: "after-school-default" },
-    update: {
-      name: "放学后每日作息",
-      weekdays: "0,1,2,3,4,5,6",
-      enabled: true
-    },
-    create: {
-      slug: "after-school-default",
-      name: "放学后每日作息",
-      weekdays: "0,1,2,3,4,5,6",
-      enabled: true
-    }
+  await prisma.familySetting.create({
+    data: { id: 1, familyName: "星光小屋", timezone: "Asia/Hong_Kong", parentPinHash: pin.hash, parentPinSalt: pin.salt }
   });
-
-  const taskBySlug = Object.fromEntries(taskRecords.map((task) => [task.slug, task]));
-  const blocks = [
-    {
-      slug: "arrive-home",
-      startTime: "16:30",
-      endTime: "16:45",
-      title: "回家整理",
-      description: "放好书包，喝水休息一下",
-      type: "routine",
-      sortOrder: 1
-    },
-    {
-      slug: "start-homework",
-      startTime: "16:45",
-      endTime: "17:00",
-      title: "准时开始",
-      description: "坐到书桌前，打开今日任务",
-      type: "task",
-      taskId: taskBySlug["start-on-time"].id,
-      sortOrder: 2
-    },
-    {
-      slug: "study-block",
-      startTime: "17:00",
-      endTime: "17:35",
-      title: "学习闯关",
-      description: "完成数学两页，遇到难题先想一想",
-      type: "task",
-      taskId: taskBySlug["math-two-pages"].id,
-      sortOrder: 3
-    },
-    {
-      slug: "free-time",
-      startTime: "17:35",
-      endTime: "18:00",
-      title: "自由时间",
-      description: "完成学习后，自己安排快乐时间",
-      type: "free",
-      sortOrder: 4
-    },
-    {
-      slug: "pack-before-bed",
-      startTime: "20:30",
-      endTime: "20:45",
-      title: "睡前整理",
-      description: "整理书包，准备明天用品",
-      type: "task",
-      taskId: taskBySlug["pack-bag"].id,
-      sortOrder: 5
-    }
-  ];
-
-  for (const block of blocks) {
-    await prisma.scheduleBlock.upsert({
-      where: { slug: block.slug },
-      update: {
-        templateId: template.id,
-        startTime: block.startTime,
-        endTime: block.endTime,
-        title: block.title,
-        description: block.description,
-        type: block.type,
-        taskId: block.taskId ?? null,
-        sortOrder: block.sortOrder,
-        enabled: true
-      },
-      create: {
-        ...block,
-        templateId: template.id,
-        taskId: block.taskId ?? null,
-        enabled: true
-      }
-    });
+  const child = await prisma.child.create({ data: { nickname: "小树苗" } });
+  const tasks = await Promise.all([
+    prisma.task.create({ data: { title: "专心阅读", childDescription: "选一本喜欢的书，安静读 20 分钟。", category: "learning", points: 3, isCore: true, sortOrder: 1 } }),
+    prisma.task.create({ data: { title: "整理书包", childDescription: "按明天的课程把书本和文具放好。", category: "routine", points: 2, sortOrder: 2 } }),
+    prisma.task.create({ data: { title: "错题回顾", childDescription: "选两道错题，说一说哪里容易出错。", category: "learning", points: 4, requiresApproval: true, isCore: true, sortOrder: 3 } })
+  ]);
+  for (let weekday = 1; weekday <= 5; weekday += 1) {
+    await prisma.schedule.createMany({ data: [
+      { taskId: tasks[0].id, title: tasks[0].title, description: tasks[0].childDescription, weekday, startTime: "17:20", endTime: "17:40", sortOrder: 1 },
+      { taskId: tasks[1].id, title: tasks[1].title, description: tasks[1].childDescription, weekday, startTime: "20:10", endTime: "20:20", sortOrder: 2 },
+      { taskId: tasks[2].id, title: tasks[2].title, description: tasks[2].childDescription, weekday, startTime: "20:25", endTime: "20:40", sortOrder: 3 }
+    ] });
   }
+  await prisma.schedule.create({ data: { title: "自由探索时间", description: "画画、搭积木或到户外看看。", scheduleType: "weekly", weekday: 0, startTime: "15:00", endTime: "16:00", reminder: false } });
+  const rewards = await Promise.all([
+    prisma.reward.create({ data: { title: "选择周末早餐", description: "由你决定一家人周末早餐吃什么。", cost: 18, category: "选择权", sortOrder: 1 } }),
+    prisma.reward.create({ data: { title: "亲子自然散步", description: "一起选一条路线，慢慢走、慢慢聊。", cost: 25, category: "亲子陪伴", sortOrder: 2 } }),
+    prisma.reward.create({ data: { title: "家庭手工时间", description: "准备材料，一起完成一个小作品。", cost: 30, category: "体验活动", sortOrder: 3 } })
+  ]);
+  await prisma.familySetting.update({ where: { id: 1 }, data: { targetRewardId: rewards[1].id } });
+
+  for (let offset = -3; offset <= -1; offset += 1) {
+    const date = addDays(today, offset);
+    const completion = await prisma.completion.create({ data: { childId: child.id, taskId: tasks[0].id, businessDate: date, status: "approved", pointsAwarded: 3, taskTitleSnapshot: tasks[0].title, taskDetailsSnapshot: tasks[0].childDescription, approvedAt: new Date(), idempotencyKey: `demo:${tasks[0].id}:${date}` } });
+    await prisma.coinTransaction.create({ data: { childId: child.id, amount: 3, type: "TASK_EARN", reason: `完成任务：${tasks[0].title}`, sourceType: "completion", sourceId: completion.id, completionId: completion.id, idempotencyKey: `demo-award:${completion.id}` } });
+  }
+  await prisma.coinTransaction.create({ data: { childId: child.id, amount: 12, type: "SPECIAL_EVENT", reason: "周末主动帮助整理餐桌", sourceType: "family", idempotencyKey: "demo-family-bonus" } });
+  await prisma.weeklyReview.create({ data: { childId: child.id, weekStart: week.start, weekEnd: week.end, wins: "开始任务比上周更主动。", difficulties: "错题回顾需要拆成更小步骤。", nextFocus: "先坚持每天阅读二十分钟。" } });
+  console.log("Demo preview seeded. Parent PIN:", process.env.DEMO_PARENT_PIN ?? "2468");
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (error) => {
-    console.error(error);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+main().finally(() => prisma.$disconnect());

@@ -1,64 +1,23 @@
-import { existsSync, statSync } from "node:fs";
-import { join } from "node:path";
+import "dotenv/config";
 import { spawnSync } from "node:child_process";
+import { closeSync, existsSync, openSync } from "node:fs";
+import { resolve } from "node:path";
 
-const root = process.cwd();
-const binExt = process.platform === "win32" ? ".cmd" : "";
-const prismaBin = join(root, "node_modules", ".bin", `prisma${binExt}`);
-const tsxBin = join(root, "node_modules", ".bin", `tsx${binExt}`);
-const dbPath = join(root, "prisma", "dev.db");
-
-function run(command, args, options = {}) {
-  const isWindows = process.platform === "win32";
-  const result = spawnSync(isWindows ? process.env.ComSpec ?? "cmd.exe" : command, [
-    ...(isWindows ? ["/d", "/s", "/c", [command, ...args].map(quoteWindowsArg).join(" ")] : args)
-  ], {
-    cwd: root,
-    encoding: "utf8",
-    ...options
-  });
-
-  if (result.error) {
-    console.error(result.error.message);
-    process.exit(1);
-  }
-
-  if (result.status !== 0) {
-    if (result.stdout) process.stdout.write(result.stdout);
-    if (result.stderr) process.stderr.write(result.stderr);
-    process.exit(result.status ?? 1);
-  }
-
-  return result;
+const databaseUrl = process.env.DATABASE_URL ?? "file:./family-star-coin.db";
+if (databaseUrl.startsWith("file:./")) {
+  const databasePath = resolve(process.cwd(), "prisma", databaseUrl.slice("file:./".length));
+  if (!existsSync(databasePath)) closeSync(openSync(databasePath, "w"));
 }
 
-function quoteWindowsArg(value) {
-  const text = String(value);
-  if (/^[A-Za-z0-9_./:=\\-]+$/.test(text)) {
-    return text;
-  }
-
-  return `"${text.replace(/"/g, '""')}"`;
+for (const args of [["prisma", "generate"], ["prisma", "db", "push"]]) {
+  const result = process.platform === "win32"
+    ? spawnSync("cmd.exe", ["/d", "/s", "/c", `npx.cmd ${args.join(" ")}`], { stdio: "inherit", env: process.env })
+    : spawnSync("npx", args, { stdio: "inherit", env: process.env });
+  if (result.status !== 0) process.exit(result.status ?? 1);
 }
-
-const needsSchema = !existsSync(dbPath) || statSync(dbPath).size === 0;
-
-if (needsSchema) {
-  const diff = run(prismaBin, [
-    "migrate",
-    "diff",
-    "--from-empty",
-    "--to-schema-datamodel",
-    "prisma/schema.prisma",
-    "--script"
-  ]);
-
-  run(prismaBin, ["db", "execute", "--stdin", "--schema", "prisma/schema.prisma"], {
-    input: diff.stdout,
-    stdio: ["pipe", "inherit", "inherit"]
-  });
-} else {
-  console.log("SQLite schema already exists; skipping schema initialization.");
+if (process.env.DEMO_SEED === "1") {
+  const result = process.platform === "win32"
+    ? spawnSync("cmd.exe", ["/d", "/s", "/c", "npx.cmd tsx prisma/seed.ts"], { stdio: "inherit", env: process.env })
+    : spawnSync("npx", ["tsx", "prisma/seed.ts"], { stdio: "inherit", env: process.env });
+  if (result.status !== 0) process.exit(result.status ?? 1);
 }
-
-run(tsxBin, ["prisma/seed.ts"], { stdio: "inherit" });
